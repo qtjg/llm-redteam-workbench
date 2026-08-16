@@ -56,6 +56,32 @@ const ALLOWED_GOALS = Object.freeze({
       },
     ],
   },
+  evaluate_stateful_boundaries: {
+    title: "Evaluate bounded multi-turn and retrieval-boundary fixtures",
+    steps: [
+      {
+        id: "validate_scope",
+        kind: "validation",
+        description: "Validate the scope, suite, and policy manifests.",
+      },
+      {
+        id: "run_suite",
+        kind: "evaluation",
+        description:
+          "Run the approved stateful fixture suite with mocked tools.",
+      },
+      {
+        id: "verify_artifact",
+        kind: "verification",
+        description: "Verify the redacted evaluation artifact integrity.",
+      },
+      {
+        id: "write_summary",
+        kind: "reporting",
+        description: "Write a reviewable agent summary.",
+      },
+    ],
+  },
 });
 
 export function createAgentPlan({

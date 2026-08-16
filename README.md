@@ -8,13 +8,14 @@
 
 An LLM safety test is meaningful only when another reviewer can answer four questions: _what was tested, under what authority, with what detector policy, and did the result change over time?_ Redline records all four without retaining raw prompts, credentials, or live tool results.
 
-| Capability            | What it provides                                                                                                                        |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Explicit scope        | A versioned manifest authorizes exact local fixtures by default, or one exact endpoint when an approved manifest enables endpoint mode. |
-| Policy gate           | A machine-readable risk policy marks a run `PASS` or `BLOCK` from declared risk thresholds.                                             |
-| Reproducibility       | Scope, suite, detector, policy, response, and artifact digests make the evaluation configuration reviewable.                            |
-| Redacted evidence     | JSON, JSONL, Markdown, and standalone HTML reports retain hashes and sanitized previews only.                                           |
-| Regression comparison | Case-level comparisons identify risk regressions, improvements, coverage changes, and exposure-index deltas.                            |
+| Capability            | What it provides                                                                                                                         |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Explicit scope        | A versioned manifest authorizes exact local fixtures by default, or one exact endpoint when an approved manifest enables endpoint mode.  |
+| Policy gate           | A machine-readable risk policy marks a run `PASS` or `BLOCK` from declared risk thresholds.                                              |
+| Reproducibility       | Scope, suite, detector, policy, response, and artifact digests make the evaluation configuration reviewable.                             |
+| Redacted evidence     | JSON, JSONL, Markdown, and standalone HTML reports retain hashes and sanitized previews only.                                            |
+| Regression comparison | Case-level comparisons identify risk regressions, improvements, coverage changes, and exposure-index deltas.                             |
+| Stateful boundaries   | Versioned synthetic conversations and retrieval contexts record turn hashes, redacted previews, and boundary findings without live data. |
 
 ## Install and run
 
@@ -25,12 +26,12 @@ pnpm install
 
 pnpm redline doctor
 pnpm redline list
-pnpm redline run --suite all --repeat 3
+pnpm redline run --suites examples/safe-baseline.suites.json --suite all --repeat 3
 ```
 
-The resulting artifacts appear under `redline-out/` and are ignored by Git. The foundation suite intentionally includes a synthetic canary disclosure and mocked-action intent so that reports demonstrate how findings are recorded. It is not a claim that any model is secure or insecure.
+The resulting artifacts appear under `redline-out/` and are ignored by Git. The safe baseline exercises every schema feature, including bounded multi-turn and retrieval-boundary fixtures, while returning a passing policy decision. It is not a claim that any model is secure or insecure.
 
-The default policy permits those intentional demonstration cases. For a fail-closed release-gate demonstration, copy [`examples/strict-release.policy.example.json`](examples/strict-release.policy.example.json) and pass it with `--policy`; the same fixture run will then return `BLOCK` after writing its redacted evidence.
+The foundation suite intentionally includes synthetic detector signals for review demonstrations, so its current default policy decision is `BLOCK` after writing redacted evidence. It is useful for verifying reporting and policy gates, while the safe baseline is used by `pnpm smoke` and CI to verify the full execution path. For a stricter release gate, copy [`examples/strict-release.policy.example.json`](examples/strict-release.policy.example.json) and pass it with `--policy`.
 
 ## CLI reference
 
@@ -43,6 +44,12 @@ The default policy permits those intentional demonstration cases. For a fail-clo
 | `pnpm redline verify --input redline-out/<run>.json`               | Checks artifact integrity and reevaluates the active risk policy.                      |
 | `pnpm redline report --input redline-out/<run>.json --format html` | Re-renders an HTML report from a redacted JSON record.                                 |
 | `pnpm redline compare --baseline <a>.json --current <b>.json`      | Compares case-level risk signals between two runs.                                     |
+
+## Multi-turn and retrieval-boundary evaluation
+
+Suite schema version 3 preserves the simple single-turn `prompt` plus `fixtureResponse` shape and adds two bounded fixture modes. A `turns[]` case evaluates ordered synthetic conversation turns; a `retrievalContexts[]` case records only a context identifier, source, trust label, content hash, and redacted preview. Each run includes total turns, retrieval-context counts, per-turn response hashes, and case-level detectors in its redacted artifacts.
+
+The foundation pack demonstrates cross-turn injected-instruction persistence (`MT-05`) and retrieved-content instruction isolation (`RG-06`) with synthetic markers. These stateful modes remain fixture-only in this release; endpoint mode does not claim to model session memory or live retrieval pipelines.
 
 ## Safe regression demonstration
 
@@ -62,7 +69,7 @@ Redline includes an agent-style orchestrator for repeatable local evaluation wor
 
 ```bash
 pnpm redline agent goals
-pnpm redline agent plan --goal evaluate_fixtures --out agent-out
+pnpm redline agent plan --goal evaluate_stateful_boundaries --out agent-out
 pnpm redline agent run \
   --plan agent-out/<plan>.plan.json \
   --approve \
@@ -80,7 +87,7 @@ pnpm redline agent run \
   --out agent-out
 ```
 
-Each plan produces a state file, a chained JSONL audit log, and a summary containing completed steps, safety constraints, and audit-chain validity. The available goals are `evaluate_fixtures` and `compare_baseline`. The orchestrator is deliberately not a general-purpose shell agent and cannot discover targets, execute real tools, or bypass scope gates.
+Each plan produces a state file, a chained JSONL audit log, and a summary containing completed steps, safety constraints, and audit-chain validity. The available goals are `evaluate_fixtures`, `evaluate_stateful_boundaries`, and `compare_baseline`. The orchestrator is deliberately not a general-purpose shell agent and cannot discover targets, execute real tools, or bypass scope gates.
 
 ## Repository map
 

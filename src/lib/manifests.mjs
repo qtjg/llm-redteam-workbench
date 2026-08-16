@@ -1,5 +1,5 @@
 export const SCOPE_VERSION = 2;
-export const SUITE_VERSION = 2;
+export const SUITE_VERSION = 3;
 export const POLICY_VERSION = 1;
 
 export function validateScope(scope) {
@@ -40,6 +40,62 @@ export function assertScope(scope, options) {
     throw new Error("Endpoint is not allowlisted by scope.allowedTargets.");
 }
 
+function hasFixtureResponse(value) {
+  return (
+    typeof value?.fixtureResponse === "string" ||
+    (Array.isArray(value?.fixtureResponses) &&
+      value.fixtureResponses.length > 0)
+  );
+}
+
+function validateTurns(testCase, errors) {
+  if (!Array.isArray(testCase.turns) || testCase.turns.length === 0) return;
+  const turnIds = new Set();
+  for (const [index, turn] of testCase.turns.entries()) {
+    const label = `${testCase.id}:turn-${index + 1}`;
+    if (!turn?.id || !/^[a-z0-9-]+$/i.test(turn.id))
+      errors.push(`${label} requires a stable turn id.`);
+    if (turnIds.has(turn?.id))
+      errors.push(`${testCase.id} contains duplicate turn id ${turn.id}.`);
+    turnIds.add(turn?.id);
+    if (typeof turn?.prompt !== "string" || !turn.prompt.trim())
+      errors.push(`${label} requires a prompt.`);
+    if (!hasFixtureResponse(turn))
+      errors.push(`${label} requires fixtureResponse or fixtureResponses.`);
+    if (
+      turn?.detectors !== undefined &&
+      (!Array.isArray(turn.detectors) || turn.detectors.length === 0)
+    )
+      errors.push(
+        `${label}.detectors must be a non-empty array when declared.`
+      );
+  }
+}
+
+function validateRetrievalContexts(testCase, errors) {
+  if (testCase.retrievalContexts === undefined) return;
+  if (!Array.isArray(testCase.retrievalContexts)) {
+    errors.push(`${testCase.id}.retrievalContexts must be an array.`);
+    return;
+  }
+  const seen = new Set();
+  for (const context of testCase.retrievalContexts) {
+    if (!context?.id || !context?.source || typeof context.content !== "string")
+      errors.push(
+        `${testCase.id} retrieval contexts require id, source, and synthetic content.`
+      );
+    if (seen.has(context?.id))
+      errors.push(
+        `${testCase.id} contains duplicate retrieval context ${context.id}.`
+      );
+    seen.add(context?.id);
+    if (context?.trust && !["untrusted", "trusted"].includes(context.trust))
+      errors.push(
+        `${testCase.id} retrieval context trust must be untrusted or trusted.`
+      );
+  }
+}
+
 export function validateSuiteManifest(suites, detectorIds) {
   const errors = [];
   if (suites?.version !== SUITE_VERSION)
@@ -53,10 +109,13 @@ export function validateSuiteManifest(suites, detectorIds) {
     if (seen.has(testCase.id))
       errors.push(`suite ID ${testCase.id} is duplicated.`);
     seen.add(testCase.id);
-    if (!testCase.title || !testCase.category || !testCase.prompt)
-      errors.push(
-        `${testCase.id ?? "suite"} is missing title, category, or prompt.`
-      );
+    if (!testCase.title || !testCase.category)
+      errors.push(`${testCase.id ?? "suite"} is missing title or category.`);
+    if (
+      !testCase.prompt &&
+      (!Array.isArray(testCase.turns) || !testCase.turns.length)
+    )
+      errors.push(`${testCase.id ?? "suite"} requires prompt or turns.`);
     if (!Array.isArray(testCase.coverage) || testCase.coverage.length === 0)
       errors.push(`${testCase.id} must declare coverage tags.`);
     if (!Array.isArray(testCase.detectors) || testCase.detectors.length === 0)
@@ -64,13 +123,18 @@ export function validateSuiteManifest(suites, detectorIds) {
     for (const detector of testCase.detectors ?? [])
       if (!detectorIds.includes(detector))
         errors.push(`${testCase.id} references unknown detector ${detector}.`);
-    if (
-      typeof testCase.fixtureResponse !== "string" &&
-      !Array.isArray(testCase.fixtureResponses)
-    )
+    for (const turn of testCase.turns ?? [])
+      for (const detector of turn.detectors ?? [])
+        if (!detectorIds.includes(detector))
+          errors.push(
+            `${testCase.id}:${turn.id} references unknown detector ${detector}.`
+          );
+    if (!testCase.turns?.length && !hasFixtureResponse(testCase))
       errors.push(
         `${testCase.id} requires fixtureResponse or fixtureResponses.`
       );
+    validateTurns(testCase, errors);
+    validateRetrievalContexts(testCase, errors);
   }
   return errors;
 }

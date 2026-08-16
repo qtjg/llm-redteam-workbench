@@ -26,6 +26,22 @@ test("creates a fixture-only plan with an inspectable step sequence", () => {
   assert.deepEqual(verifyAgentPlan(plan), []);
 });
 
+test("plans stateful-boundary evaluation under the same fixture-only constraints", () => {
+  const plan = createAgentPlan({
+    goal: "evaluate_stateful_boundaries",
+    scopePath: "fixtures/scope.json",
+    suitesPath: "fixtures/suites.json",
+    policyPath: "fixtures/policy.json",
+    outputDir: "agent-out",
+  });
+  assert.equal(
+    plan.title,
+    "Evaluate bounded multi-turn and retrieval-boundary fixtures"
+  );
+  assert.equal(plan.constraints.network, "disabled");
+  assert.deepEqual(verifyAgentPlan(plan), []);
+});
+
 test("requires the exact explicit approval acknowledgement", () => {
   const plan = createAgentPlan({
     goal: "evaluate_fixtures",

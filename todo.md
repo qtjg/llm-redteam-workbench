@@ -36,3 +36,12 @@
 - [x] Add resume, pause, and bounded retry behavior without hidden background execution.
 - [x] Add tests for budget exhaustion, unauthorized actions, prompt-injection-resistant planning, and audit integrity.
 - [x] Update CLI documentation and publish the autonomous-agent extension to the private repository.
+
+## Multi-turn and retrieval-boundary evaluation
+
+- [x] Extend the suite schema with synthetic conversation turns and redacted retrieval context references.
+- [x] Add stateful fixture execution that records turn-level hashes, previews, and detector results without writing raw prompts.
+- [x] Add retrieval-boundary and cross-turn instruction-persistence detectors with safe synthetic markers.
+- [x] Add multi-turn and retrieval-boundary fixture cases, deterministic tests, and report coverage summaries.
+- [x] Update agent planning, documentation, CI, and versioned CLI metadata for the new evaluation modes.
+- [ ] Validate, commit, and push the enhanced CLI-only evaluator to the private GitHub repository.

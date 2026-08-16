@@ -17,7 +17,7 @@ export async function writeRunArtifacts(run, outputDir) {
     eventsPath: `${base}.events.jsonl`,
     directory: dirname(base),
   };
-  const events = run.results.flatMap(result =>
+  const findingEvents = run.results.flatMap(result =>
     result.findings.map(finding =>
       JSON.stringify({
         runId: run.runId,
@@ -30,11 +30,33 @@ export async function writeRunArtifacts(run, outputDir) {
       })
     )
   );
+  const turnEvents = run.results.flatMap(result =>
+    result.turns.flatMap(turn =>
+      result.findings
+        .filter(finding => turn.findingIds.includes(finding.id))
+        .map(finding =>
+          JSON.stringify({
+            runId: run.runId,
+            caseId: result.caseId,
+            turnId: turn.id,
+            type: "turn-evidence",
+            responseHash: turn.responseHash,
+            retrievalContextCount: result.retrievalContexts.length,
+            findingId: finding.id,
+            detector: finding.detector,
+            occurredAt: run.startedAt,
+          })
+        )
+    )
+  );
   await Promise.all([
     writeFile(paths.jsonPath, JSON.stringify(run, null, 2) + "\n"),
     writeFile(paths.markdownPath, renderMarkdownReport(run)),
     writeFile(paths.htmlPath, renderHtmlReport(run)),
-    writeFile(paths.eventsPath, events.join("\n") + "\n"),
+    writeFile(
+      paths.eventsPath,
+      [...findingEvents, ...turnEvents].join("\n") + "\n"
+    ),
   ]);
   return paths;
 }

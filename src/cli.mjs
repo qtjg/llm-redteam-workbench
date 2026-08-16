@@ -63,7 +63,7 @@ function usage() {
   console.log(
     `\nredline — CLI-only, evidence-led AI/LLM safety evaluator\n\nCommands:\n  redline doctor [--scope path] [--suites path] [--policy path]\n  redline validate [--scope path] [--suites path] [--policy path]\n  redline list [--suites path]\n  redline run [--suite all|ID] [--repeat 1..20] [--out dir]\n  redline verify --input run.json [--policy path]\n  redline report --input run.json [--format markdown|html] [--out path]\n  redline compare --baseline run-a.json --current run-b.json [--out dir]
   redline agent goals
-  redline agent plan --goal evaluate_fixtures|compare_baseline [--out dir]
+  redline agent plan --goal evaluate_fixtures|evaluate_stateful_boundaries|compare_baseline [--out dir]
   redline agent run --plan plan.json --approve [--max-steps N] [--out dir]
 
 Default mode is local fixtures only. Endpoint mode requires an explicit exact allowlist, mock tools, and --acknowledge-authorization.\n`

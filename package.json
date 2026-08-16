@@ -1,6 +1,6 @@
 {
   "name": "redline-observatory",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "A local-first CLI for authorized, evidence-led AI/LLM safety evaluation.",
   "type": "module",
   "license": "MIT",
@@ -20,7 +20,7 @@
     "test": "node --test test/**/*.test.mjs",
     "test:watch": "node --test --watch test/**/*.test.mjs",
     "validate": "node src/cli.mjs validate",
-    "smoke": "node src/cli.mjs doctor && node src/cli.mjs run --suite all --repeat 2",
+    "smoke": "node src/cli.mjs doctor && node src/cli.mjs run --suites examples/safe-baseline.suites.json --suite all --repeat 2",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
