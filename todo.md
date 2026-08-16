@@ -44,4 +44,4 @@
 - [x] Add retrieval-boundary and cross-turn instruction-persistence detectors with safe synthetic markers.
 - [x] Add multi-turn and retrieval-boundary fixture cases, deterministic tests, and report coverage summaries.
 - [x] Update agent planning, documentation, CI, and versioned CLI metadata for the new evaluation modes.
-- [ ] Validate, commit, and push the enhanced CLI-only evaluator to the private GitHub repository.
+- [x] Validate, commit, and push the enhanced CLI-only evaluator to the private GitHub repository.
