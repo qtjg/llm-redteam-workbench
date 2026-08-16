@@ -9,7 +9,7 @@ import {
 import { redactText } from "./redaction.mjs";
 
 export const RUN_SCHEMA_VERSION = 4;
-export const REDLINE_VERSION = "0.7.0";
+export const REDLINE_VERSION = "0.8.0";
 
 async function invokeOpenAICompatible({ endpoint, model, apiKey, prompt }) {
   const response = await fetch(

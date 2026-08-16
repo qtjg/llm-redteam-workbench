@@ -121,7 +121,36 @@ Read the [governance guide](docs/GOVERNANCE.md) before adding or renewing an exc
 
 ## Automation
 
-GitHub Actions verifies every pull request and `main` push with formatting, manifest validation, deterministic tests, a coverage audit, and the safe-baseline smoke workflow. A separate **Redline Release Readiness** workflow runs on `v*` tags or manual dispatch and uploads redacted coverage and release-readiness evidence. It does not contact targets, create releases, or publish packages automatically; it prepares auditable evidence for an authorized maintainer decision.
+GitHub Actions verifies every pull request and `main` push with formatting, manifest validation, deterministic tests, a coverage audit, a current suite-review gate, and the safe-baseline smoke workflow. A separate **Redline Release Readiness** workflow runs on `v*` tags or manual dispatch and uploads redacted coverage, suite-review, and release-readiness evidence. For a deliberate version tag it creates or refreshes a **draft** GitHub release containing that evidence and the packaged CLI; it never publishes the draft, deploys a service, or contacts a live target automatically.
+
+## Suite-review utility
+
+`redline review` is a manifest-only governance check. It reads the validated suite governance record, calculates the next review date from `lastReviewedAt` and `reviewCadenceDays`, inventories multi-turn and retrieval-boundary coverage, and returns `CURRENT` or `OVERDUE`. It never executes a model, contacts a target, or writes fixture content to its output.
+
+```bash
+# Write a reviewer-friendly Markdown summary using a deterministic review date.
+pnpm redline review \
+  --as-of 2026-09-01T00:00:00Z \
+  --format markdown \
+  --out review-out/suite-review.md
+
+# Use JSON when an internal governance workflow needs structured data.
+pnpm redline review --format json --out review-out/suite-review.json
+```
+
+An overdue review exits with status code `2`, making it suitable as a merge or release gate. Review the owner, reviewer role, cadence, detector mappings, and synthetic scope before updating `lastReviewedAt`.
+
+## Version-tag release flow
+
+For an intentional version tag matching `v*`, the **Redline Release Readiness** workflow validates the repository, runs tests, packages the CLI, generates a coverage audit, suite-review summary, and safe-baseline release report, then uploads the redacted artifacts. It creates or refreshes a **draft** GitHub release for the tag; the workflow never publishes it automatically.
+
+```bash
+# After local checks and an authorized version decision.
+git tag -a v0.8.0 -m "Redline Observatory v0.8.0"
+git push github v0.8.0
+```
+
+Inspect the draft’s evidence bundle before selecting **Publish release** in GitHub. The project is a CLI package, so this workflow does not deploy a web service or contact any live evaluation target.
 
 ## Safe regression demonstration
 

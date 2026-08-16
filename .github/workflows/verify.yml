@@ -34,5 +34,7 @@ jobs:
         run: pnpm format:check
       - name: Audit manifest coverage and governance
         run: pnpm redline coverage --format json --out /tmp/redline-coverage-audit.json
+      - name: Enforce suite-review currency
+        run: pnpm redline review --format json --out /tmp/redline-suite-review.json
       - name: Exercise the bounded fixture runner
         run: pnpm smoke

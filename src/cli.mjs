@@ -25,6 +25,7 @@ import {
   createReleaseReadiness,
   renderReleaseReadinessMarkdown,
 } from "./lib/release.mjs";
+import { createSuiteReview, renderSuiteReviewMarkdown } from "./lib/review.mjs";
 import { renderHtmlReport, renderMarkdownReport } from "./lib/reports.mjs";
 import {
   allowedAgentGoals,
@@ -69,7 +70,7 @@ const readPaths = args => ({
 
 function usage() {
   console.log(
-    `\nredline — CLI-only, evidence-led AI/LLM safety evaluator\n\nCommands:\n  redline doctor [--scope path] [--suites path] [--policy path]\n  redline validate [--scope path] [--suites path] [--policy path]\n  redline list [--suites path]\n  redline coverage [--suites path] [--format json|markdown] [--out path]\n  redline run [--suite all|ID] [--repeat 1..20] [--out dir]\n  redline verify --input run.json [--policy path]\n  redline release --input run.json [--policy path] [--format json|markdown] [--out path]\n  redline report --input run.json [--format markdown|html] [--out path]\n  redline compare --baseline run-a.json --current run-b.json [--out dir]
+    `\nredline — CLI-only, evidence-led AI/LLM safety evaluator\n\nCommands:\n  redline doctor [--scope path] [--suites path] [--policy path]\n  redline validate [--scope path] [--suites path] [--policy path]\n  redline list [--suites path]\n  redline coverage [--suites path] [--format json|markdown] [--out path]\n  redline review [--suites path] [--as-of ISO-8601] [--format json|markdown] [--out path]\n  redline run [--suite all|ID] [--repeat 1..20] [--out dir]\n  redline verify --input run.json [--policy path]\n  redline release --input run.json [--policy path] [--format json|markdown] [--out path]\n  redline report --input run.json [--format markdown|html] [--out path]\n  redline compare --baseline run-a.json --current run-b.json [--out dir]
   redline agent goals
   redline agent plan --goal evaluate_fixtures|evaluate_stateful_boundaries|compare_baseline [--out dir]
   redline agent run --plan plan.json --approve [--max-steps N] [--out dir]
@@ -326,7 +327,11 @@ async function main() {
   if (["help", "--help", "-h"].includes(command)) return usage();
   if (command === "agent") return runAgentCommand(args);
   const { scopePath, suitesPath, policyPath } = readPaths(args);
-  if (!["report", "compare", "verify", "coverage", "release"].includes(command))
+  if (
+    !["report", "compare", "verify", "coverage", "review", "release"].includes(
+      command
+    )
+  )
     for (const path of [scopePath, suitesPath, policyPath])
       if (!existsSync(path)) throw new Error(`Manifest not found: ${path}`);
   if (command === "doctor" || command === "validate") {
@@ -391,6 +396,35 @@ async function main() {
       await writeFile(path, content);
       console.log(`Wrote ${format} coverage audit: ${path}`);
     } else console.log(content);
+    return;
+  }
+  if (command === "review") {
+    if (!existsSync(suitesPath))
+      throw new Error(`Manifest not found: ${suitesPath}`);
+    const suites = await readJson(suitesPath);
+    const errors = validateSuiteManifest(
+      suites,
+      detectorCatalog().map(detector => detector.id)
+    );
+    if (errors.length) throw new Error(errors.join(" "));
+    const review = createSuiteReview(suites, {
+      now: option(args, "--as-of", new Date().toISOString()),
+      sourceRevision: sourceRevision(),
+    });
+    const format = option(args, "--format", "markdown");
+    if (!["json", "markdown"].includes(format))
+      throw new Error("--format must be json or markdown.");
+    const output = option(args, "--out", null);
+    const content =
+      format === "json"
+        ? JSON.stringify(review, null, 2) + "\n"
+        : renderSuiteReviewMarkdown(review);
+    if (output) {
+      const path = resolve(output);
+      await writeFile(path, content);
+      console.log(`Wrote ${format} suite-review summary: ${path}`);
+    } else console.log(content);
+    if (review.governance.status === "overdue") process.exitCode = 2;
     return;
   }
   if (command === "run") {

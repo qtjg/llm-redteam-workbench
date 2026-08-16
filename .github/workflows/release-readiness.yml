@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   release-readiness:
@@ -34,13 +34,44 @@ jobs:
         run: |
           mkdir -p release-out
           pnpm redline coverage --format markdown --out release-out/coverage-audit.md
+          pnpm redline review --format markdown --out release-out/suite-review.md
           pnpm redline run --suites examples/safe-baseline.suites.json --out release-out
           run_artifact="$(find release-out -maxdepth 1 -name 'run_*.json' | head -n 1)"
           test -n "$run_artifact"
           pnpm redline release --input "$run_artifact" --format markdown --out release-out/release-readiness.md
+          pnpm pack --pack-destination release-out
+          {
+            echo "# Redline Observatory ${GITHUB_REF_NAME}"
+            echo
+            echo "This draft release was built from a local fixture-only validation path."
+            echo
+            echo "## Included evidence"
+            echo
+            echo "- Governance-aware coverage audit"
+            echo "- Suite-review summary"
+            echo "- Safe-baseline release-readiness report"
+            echo "- Packaged CLI tarball"
+            echo
+            echo "Publishing this draft remains a maintainer decision."
+          } > release-out/RELEASE_NOTES.md
       - name: Upload redacted release evidence
         uses: actions/upload-artifact@v4
         with:
           name: redline-release-readiness-${{ github.sha }}
           path: release-out/
           if-no-files-found: error
+      - name: Create or refresh draft GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          if gh release view "${GITHUB_REF_NAME}"; then
+            gh release upload "${GITHUB_REF_NAME}" release-out/* --clobber
+          else
+            gh release create "${GITHUB_REF_NAME}" \
+              --draft \
+              --title "Redline Observatory ${GITHUB_REF_NAME}" \
+              --notes-file release-out/RELEASE_NOTES.md \
+              release-out/*
+          fi

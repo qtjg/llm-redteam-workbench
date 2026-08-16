@@ -68,3 +68,10 @@
 - [x] Implement time-bound, case-scoped policy exceptions that require an owner, rationale, and expiration date.
 - [x] Add GitHub Actions automation for validation, tests, smoke checks, and release-readiness artifacts.
 - [x] Add tests and governance documentation, then validate, commit, and push the completed enhancement.
+
+## Reusable release-review workflow
+
+- [x] Add a deterministic suite-review utility that flags overdue governance reviews without executing a target.
+- [x] Add an automated GitHub Actions workflow for version-tag release review and GitHub release-note drafting.
+- [x] Package the governed release-review workflow as a reusable Manus skill and validate it with skill-creator.
+- [ ] Expand README usage and add tests, then validate, commit, push, and verify the workflow.

@@ -25,6 +25,6 @@ The file [`examples/time-bound-exception.policy.example.json`](../examples/time-
 
 ## Automated checks and release evidence
 
-The standard verification workflow runs for pull requests and pushes to `main`. It validates manifests, executes deterministic tests, checks formatting, produces a manifest coverage audit, and runs the safe baseline smoke path. The separate **Redline Release Readiness** workflow runs on version tags matching `v*` or through manual dispatch. It rebuilds the safe-baseline evidence bundle and uploads only redacted coverage and release-readiness artifacts.
+The standard verification workflow runs for pull requests and pushes to `main`. It validates manifests, executes deterministic tests, checks formatting, produces manifest coverage and suite-review evidence, and runs the safe baseline smoke path. The separate **Redline Release Readiness** workflow runs on version tags matching `v*` or through manual dispatch. It rebuilds the safe-baseline evidence bundle and uploads redacted coverage, suite-review, and release-readiness artifacts.
 
-The workflow does **not** contact a model, send a prompt to a target, create a GitHub release, or publish a package. Creating a tag and releasing software remain deliberate maintainer actions. The automation supplies review evidence; it does not replace human authorization.
+The workflow does **not** contact a model, send a prompt to a target, publish a GitHub release, or deploy a service. A deliberate version tag creates or refreshes a **draft** GitHub release containing the evidence bundle and packaged CLI, while the decision to publish remains with a maintainer. The automation supplies review evidence; it does not replace human authorization.
