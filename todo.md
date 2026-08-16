@@ -74,4 +74,4 @@
 - [x] Add a deterministic suite-review utility that flags overdue governance reviews without executing a target.
 - [x] Add an automated GitHub Actions workflow for version-tag release review and GitHub release-note drafting.
 - [x] Package the governed release-review workflow as a reusable Manus skill and validate it with skill-creator.
-- [ ] Expand README usage and add tests, then validate, commit, push, and verify the workflow.
+- [x] Dispatch and verify the manual release-readiness workflow, then commit and push the completed checklist.
