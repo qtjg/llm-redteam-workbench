@@ -9,6 +9,10 @@ import {
 } from "./lib/artifacts.mjs";
 import { compareRuns } from "./lib/compare.mjs";
 import { readJson, digestJson } from "./lib/codec.mjs";
+import {
+  createCoverageAudit,
+  renderCoverageMarkdown,
+} from "./lib/coverage.mjs";
 import { detectorCatalog } from "./lib/detectors.mjs";
 import { executeRun, verifyRunIntegrity } from "./lib/evaluator.mjs";
 import {
@@ -61,7 +65,7 @@ const readPaths = args => ({
 
 function usage() {
   console.log(
-    `\nredline — CLI-only, evidence-led AI/LLM safety evaluator\n\nCommands:\n  redline doctor [--scope path] [--suites path] [--policy path]\n  redline validate [--scope path] [--suites path] [--policy path]\n  redline list [--suites path]\n  redline run [--suite all|ID] [--repeat 1..20] [--out dir]\n  redline verify --input run.json [--policy path]\n  redline report --input run.json [--format markdown|html] [--out path]\n  redline compare --baseline run-a.json --current run-b.json [--out dir]
+    `\nredline — CLI-only, evidence-led AI/LLM safety evaluator\n\nCommands:\n  redline doctor [--scope path] [--suites path] [--policy path]\n  redline validate [--scope path] [--suites path] [--policy path]\n  redline list [--suites path]\n  redline coverage [--suites path] [--format json|markdown] [--out path]\n  redline run [--suite all|ID] [--repeat 1..20] [--out dir]\n  redline verify --input run.json [--policy path]\n  redline report --input run.json [--format markdown|html] [--out path]\n  redline compare --baseline run-a.json --current run-b.json [--out dir]
   redline agent goals
   redline agent plan --goal evaluate_fixtures|evaluate_stateful_boundaries|compare_baseline [--out dir]
   redline agent run --plan plan.json --approve [--max-steps N] [--out dir]
@@ -318,7 +322,7 @@ async function main() {
   if (["help", "--help", "-h"].includes(command)) return usage();
   if (command === "agent") return runAgentCommand(args);
   const { scopePath, suitesPath, policyPath } = readPaths(args);
-  if (!["report", "compare", "verify"].includes(command))
+  if (!["report", "compare", "verify", "coverage"].includes(command))
     for (const path of [scopePath, suitesPath, policyPath])
       if (!existsSync(path)) throw new Error(`Manifest not found: ${path}`);
   if (command === "doctor" || command === "validate") {
@@ -354,6 +358,35 @@ async function main() {
       console.log(
         `${suite.id}\t${suite.category}\tcoverage: ${suite.coverage.join(", ")}\tdetectors: ${suite.detectors.join(", ")}`
       );
+    return;
+  }
+  if (command === "coverage") {
+    if (!existsSync(suitesPath))
+      throw new Error(`Manifest not found: ${suitesPath}`);
+    const suites = await readJson(suitesPath);
+    const errors = validateSuiteManifest(
+      suites,
+      detectorCatalog().map(detector => detector.id)
+    );
+    if (errors.length) throw new Error(errors.join(" "));
+    const audit = createCoverageAudit(
+      suites,
+      detectorCatalog().map(detector => detector.id),
+      sourceRevision()
+    );
+    const format = option(args, "--format", "markdown");
+    if (!["json", "markdown"].includes(format))
+      throw new Error("--format must be json or markdown.");
+    const output = option(args, "--out", null);
+    const content =
+      format === "json"
+        ? JSON.stringify(audit, null, 2) + "\n"
+        : renderCoverageMarkdown(audit);
+    if (output) {
+      const path = resolve(output);
+      await writeFile(path, content);
+      console.log(`Wrote ${format} coverage audit: ${path}`);
+    } else console.log(content);
     return;
   }
   if (command === "run") {

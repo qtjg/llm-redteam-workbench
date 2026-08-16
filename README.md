@@ -40,6 +40,7 @@ The foundation suite intentionally includes synthetic detector signals for revie
 | `pnpm redline doctor`                                              | Displays scope containment, suite count, detector count, and active risk policy.       |
 | `pnpm redline validate`                                            | Validates scope, suite, detector references, and policy schemas before a run.          |
 | `pnpm redline list`                                                | Lists bounded suites with coverage tags and detector assignments.                      |
+| `pnpm redline coverage --format markdown`                          | Audits declared fixture coverage, detector use, and stateful test modes without a run. |
 | `pnpm redline run --suite all --repeat 3`                          | Runs the synthetic fixture corpus and emits redacted artifacts plus a policy decision. |
 | `pnpm redline verify --input redline-out/<run>.json`               | Checks artifact integrity and reevaluates the active risk policy.                      |
 | `pnpm redline report --input redline-out/<run>.json --format html` | Re-renders an HTML report from a redacted JSON record.                                 |
@@ -50,6 +51,15 @@ The foundation suite intentionally includes synthetic detector signals for revie
 Suite schema version 3 preserves the simple single-turn `prompt` plus `fixtureResponse` shape and adds two bounded fixture modes. A `turns[]` case evaluates ordered synthetic conversation turns; a `retrievalContexts[]` case records only a context identifier, source, trust label, content hash, and redacted preview. Each run includes total turns, retrieval-context counts, per-turn response hashes, and case-level detectors in its redacted artifacts.
 
 The foundation pack demonstrates cross-turn injected-instruction persistence (`MT-05`) and retrieved-content instruction isolation (`RG-06`) with synthetic markers. These stateful modes remain fixture-only in this release; endpoint mode does not claim to model session memory or live retrieval pipelines.
+
+## Coverage audit
+
+`redline coverage` performs a deterministic, manifest-only review before an evaluation run. It counts declared cases, categories, threat-class tags, detector assignments, single-turn cases, multi-turn cases, and retrieval-boundary cases. It also identifies registered detectors that the selected fixture corpus does not use, making coverage gaps reviewable without contacting a model or retaining raw test payloads.
+
+```bash
+pnpm redline coverage --format markdown
+pnpm redline coverage --format json --out redline-out/coverage-audit.json
+```
 
 ## Safe regression demonstration
 
@@ -95,6 +105,7 @@ Each plan produces a state file, a chained JSONL audit log, and a summary contai
 src/cli.mjs                 command interface
 src/lib/manifests.mjs       scope, suite, and policy validation
 src/lib/detectors.mjs       small policy-driven detector registry
+src/lib/coverage.mjs        manifest-only coverage and detector-use audit
 src/lib/evaluator.mjs       bounded execution, integrity, and provenance
 src/lib/policy.mjs          scoring, thresholds, and risk decisions
 src/lib/artifacts.mjs       redacted JSON/JSONL/Markdown/HTML outputs

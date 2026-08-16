@@ -45,3 +45,9 @@
 - [x] Add multi-turn and retrieval-boundary fixture cases, deterministic tests, and report coverage summaries.
 - [x] Update agent planning, documentation, CI, and versioned CLI metadata for the new evaluation modes.
 - [x] Validate, commit, and push the enhanced CLI-only evaluator to the private GitHub repository.
+
+## Coverage audit command
+
+- [x] Add a deterministic coverage-audit model that summarizes threat classes, detector use, and stateful fixture modes.
+- [x] Expose the audit through a `redline coverage` CLI command with JSON and Markdown output.
+- [ ] Add unit tests, usage documentation, validation, and a pushed GitHub release commit.
