@@ -50,4 +50,4 @@
 
 - [x] Add a deterministic coverage-audit model that summarizes threat classes, detector use, and stateful fixture modes.
 - [x] Expose the audit through a `redline coverage` CLI command with JSON and Markdown output.
-- [ ] Add unit tests, usage documentation, validation, and a pushed GitHub release commit.
+- [x] Add unit tests, usage documentation, validation, and a pushed GitHub release commit.
