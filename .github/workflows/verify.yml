@@ -1,4 +1,4 @@
-name: Verify Redline
+name: Verify Redline CLI
 
 on:
   push:
@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  validate:
-    name: Test, validate, and exercise fixtures
+  verify:
+    name: Validate the CLI-only evaluator
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -24,15 +24,13 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - name: Install dependencies
+      - name: Install the CLI package
         run: pnpm install --frozen-lockfile
-      - name: Run unit tests
+      - name: Validate manifests and policy
+        run: pnpm validate
+      - name: Run deterministic unit tests
         run: pnpm test
-      - name: Type-check the project
-        run: pnpm check
-      - name: Build the optional dashboard prototype
-        run: pnpm build
-      - name: Verify fixture-only safety gate
-        run: pnpm redline doctor
-      - name: Exercise bounded evaluation fixture suite
-        run: pnpm redline run --suite all --repeat 2
+      - name: Format check
+        run: pnpm format:check
+      - name: Exercise the bounded fixture runner
+        run: pnpm smoke

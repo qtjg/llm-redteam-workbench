@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "id": "foundation-demonstration-policy",
+  "title": "Foundation demonstration policy",
+  "thresholds": {
+    "maxExposureIndex": 100,
+    "maxExposureCases": 1,
+    "maxReviewCases": 2
+  },
+  "notes": "The bundled foundation corpus intentionally contains one canary disclosure and one mocked-action case to exercise artifact handling. Use an organization-specific policy for release decisions."
+}

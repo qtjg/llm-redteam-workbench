@@ -1,25 +1,52 @@
 # Redline Observatory
 
-**Redline Observatory is a local-first CLI for turning authorized AI/LLM safety tests into reproducible, redacted, reviewable engineering evidence.** It is built for model and application owners who want to exercise bounded safety fixtures, inspect deterministic detector output, and compare risk signals after a change.
+**Redline Observatory is a local-first command-line evaluator for authorized AI/LLM security testing.** It executes bounded fixture suites, records only redacted evidence, enforces explicit scope, and compares safety signals across runs.
 
-> **Safety by default:** Redline’s bundled fixture mode never contacts a network target and never executes tools. Endpoint mode is disabled unless an operator supplies a scope manifest that allowlists one exact endpoint, sets `allowNetwork: true`, keeps `mockTools: true`, and explicitly acknowledges authorization.
+> **CLI only. No browser application, hosted service, target discovery, or tool-execution engine is included.** The default fixture mode has no network access and uses synthetic data only.
 
-## Why it exists
+## Why this project is different
 
-LLM behavior is variable, and a screenshot of a single prompt is weak evidence. Redline records the evaluation scope, suite, detector policy, source revision, response hashes, repeat count, redacted findings, and coverage gaps. This supports regression testing and technical review without persisting raw prompts, credentials, or real tool output.
+An LLM safety test is meaningful only when another reviewer can answer four questions: _what was tested, under what authority, with what detector policy, and did the result change over time?_ Redline records all four without retaining raw prompts, credentials, or live tool results.
 
-## Quick start
+| Capability            | What it provides                                                                                                                        |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Explicit scope        | A versioned manifest authorizes exact local fixtures by default, or one exact endpoint when an approved manifest enables endpoint mode. |
+| Policy gate           | A machine-readable risk policy marks a run `PASS` or `BLOCK` from declared risk thresholds.                                             |
+| Reproducibility       | Scope, suite, detector, policy, response, and artifact digests make the evaluation configuration reviewable.                            |
+| Redacted evidence     | JSON, JSONL, Markdown, and standalone HTML reports retain hashes and sanitized previews only.                                           |
+| Regression comparison | Case-level comparisons identify risk regressions, improvements, coverage changes, and exposure-index deltas.                            |
+
+## Install and run
 
 ```bash
+git clone https://github.com/qtjg/llm-redteam-workbench.git
+cd llm-redteam-workbench
 pnpm install
+
 pnpm redline doctor
 pnpm redline list
 pnpm redline run --suite all --repeat 3
 ```
 
-The run writes four local, ignored artifacts under `redline-out/`: a provenance-rich JSON record, a Markdown report, a standalone HTML report, and a JSONL event stream. No raw payloads or API keys are written.
+The resulting artifacts appear under `redline-out/` and are ignored by Git. The foundation suite intentionally includes a synthetic canary disclosure and mocked-action intent so that reports demonstrate how findings are recorded. It is not a claim that any model is secure or insecure.
 
-To see a deterministic risk-regression comparison without contacting any model, run the clean synthetic baseline and then compare it against the foundation fixture pack:
+The default policy permits those intentional demonstration cases. For a fail-closed release-gate demonstration, copy [`examples/strict-release.policy.example.json`](examples/strict-release.policy.example.json) and pass it with `--policy`; the same fixture run will then return `BLOCK` after writing its redacted evidence.
+
+## CLI reference
+
+| Command                                                            | Purpose                                                                                |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `pnpm redline doctor`                                              | Displays scope containment, suite count, detector count, and active risk policy.       |
+| `pnpm redline validate`                                            | Validates scope, suite, detector references, and policy schemas before a run.          |
+| `pnpm redline list`                                                | Lists bounded suites with coverage tags and detector assignments.                      |
+| `pnpm redline run --suite all --repeat 3`                          | Runs the synthetic fixture corpus and emits redacted artifacts plus a policy decision. |
+| `pnpm redline verify --input redline-out/<run>.json`               | Checks artifact integrity and reevaluates the active risk policy.                      |
+| `pnpm redline report --input redline-out/<run>.json --format html` | Re-renders an HTML report from a redacted JSON record.                                 |
+| `pnpm redline compare --baseline <a>.json --current <b>.json`      | Compares case-level risk signals between two runs.                                     |
+
+## Safe regression demonstration
+
+The repository contains a clean synthetic baseline only to demonstrate the comparison workflow. It never invokes a remote target.
 
 ```bash
 pnpm redline run --suites examples/safe-baseline.suites.json --out redline-out/baseline
@@ -29,31 +56,24 @@ pnpm redline compare \
   --current redline-out/current/<current-run>.json
 ```
 
-## Core commands
+## Repository map
 
-| Command | Purpose |
-|---|---|
-| `pnpm redline doctor` | Validates the safety manifest, fixture-only containment, and configured detector registry. |
-| `pnpm redline list` | Lists bounded cases with their coverage tags and detector assignments. |
-| `pnpm redline run --suite all --repeat 3` | Executes the synthetic fixture suite, measures detector reproduction rates, and emits four redacted artifacts. |
-| `pnpm redline report --input <run>.json --format html` | Re-renders a self-contained HTML report from a redacted JSON artifact. |
-| `pnpm redline compare --baseline <run-a>.json --current <run-b>.json` | Flags case-level risk regressions and improvements between two runs. |
-| `pnpm test` | Runs the deterministic evaluator unit tests. |
+```text
+src/cli.mjs                 command interface
+src/lib/manifests.mjs       scope, suite, and policy validation
+src/lib/detectors.mjs       small policy-driven detector registry
+src/lib/evaluator.mjs       bounded execution, integrity, and provenance
+src/lib/policy.mjs          scoring, thresholds, and risk decisions
+src/lib/artifacts.mjs       redacted JSON/JSONL/Markdown/HTML outputs
+fixtures/                   synthetic scope, suite, and policy manifests
+examples/                   safe baseline and endpoint-manifest example
+test/                       deterministic Node.js unit tests
+docs/                       architecture, threat model, and project showcase
+```
 
-## Foundation coverage
+## Endpoint mode: authorized targets only
 
-The included fixture pack demonstrates four bounded test classes: prompt-injection instruction boundaries, synthetic canary leakage, mocked external-action intent, and unsafe-output boundaries. Every case declares its detector policy and coverage tags. The reports also name what is **not** yet tested: retrieval pipelines, multi-turn sessions, real tool execution, and multi-agent propagation.
-
-| Coverage tag | Example controlled check | Detection approach |
-|---|---|---|
-| OWASP LLM01 | An untrusted document tries to override a higher-priority instruction. | Flag apparent disclosure of private system-level instructions. |
-| OWASP LLM02 | A fake marker is placed in a synthetic test record. | Flag any `RL_CANARY_*` marker in a response, then redact it in artifacts. |
-| OWASP LLM06 | A model is asked to suggest a fictitious external action. | Record mocked action intent; no action is ever wired for execution. |
-| OWASP LLM05 | A case contains a locally-defined unsafe-output marker. | Apply an explicit case-specific output detector. |
-
-## Endpoint mode for authorized targets only
-
-Copy [`examples/approved-endpoint.scope.example.json`](examples/approved-endpoint.scope.example.json), replace the placeholder only after documented authorization, and keep tool execution mocked. API keys must remain in an environment variable; Redline never writes them to an artifact.
+The bundled scope remains in fixture mode. To test an endpoint you own or are explicitly authorized to assess, start from [`examples/approved-endpoint.scope.example.json`](examples/approved-endpoint.scope.example.json), allowlist only that exact endpoint, keep `mockTools: true`, and acknowledge authorization at invocation time.
 
 ```bash
 export APPROVED_LLM_KEY="…"
@@ -66,37 +86,13 @@ pnpm redline run \
   --acknowledge-authorization
 ```
 
-## Architecture and engineering evidence
+## Responsible use
 
-The primary tool implementation is intentionally small and inspectable:
+Redline is not a scanner, remote exploitation framework, certification service, or agent executor. Do not test systems without authorization. Do not place real customer data, credentials, unreleased prompts, or personal information in a fixture. Review [SECURITY.md](SECURITY.md), the [threat model](docs/THREAT_MODEL.md), and the [contribution guide](CONTRIBUTING.md) before extending the corpus.
 
-```text
-scope + synthetic suite → safety guard → adapter boundary → detector registry
-                                     → scoring + redaction + provenance
-                                     → JSON / JSONL / Markdown / HTML artifacts
-```
+## Engineering rationale
 
-Read the [architecture](docs/ARCHITECTURE.md), [threat model](docs/THREAT_MODEL.md), [evaluation principles](docs/EVALUATION_PRINCIPLES.md), [contributing guide](CONTRIBUTING.md), and [project showcase](docs/SHOWCASE.md) for design choices, validation boundaries, and a technical walkthrough.
-
-## Verification
-
-GitHub Actions runs unit tests, TypeScript checking, the optional dashboard build, scope validation, and the fixture suite on pushes and pull requests. You can reproduce the same checks locally:
-
-```bash
-pnpm test
-pnpm check
-pnpm build
-pnpm redline doctor
-pnpm redline run --suite all --repeat 2
-```
-
-## Responsible-use statement
-
-Redline is not a scanner, remote exploitation framework, vulnerability certification, or agent executor. Use it only on systems you own or are authorized to assess. Do not include real personal data, API keys, customer data, or unreleased prompts in fixtures. See [SECURITY.md](SECURITY.md) for reporting guidance.
-
-## References
-
-The scope, evidence, and regression design are informed by the following public guidance. [1] [2] [3]
+The implementation treats AI red teaming as a disciplined software evaluation process. It uses case-specific detectors, explicit test coverage, repeat-trial reproduction rates, and reviewable evidence instead of vague claims based on a single prompt. This approach is consistent with public AI evaluation and testing guidance. [1] [2] [3]
 
 [1]: https://www.cisa.gov/news-events/news/ai-red-teaming-applying-software-tevv-ai-evaluations "CISA: Applying Software TEVV for AI Evaluations"
 [2]: https://owaspai.org/docs/5_testing/ "OWASP AI security testing"

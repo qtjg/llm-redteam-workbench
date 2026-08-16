@@ -20,13 +20,13 @@ scope manifest + suite manifest
 
 ## Components
 
-| Component | Responsibility | Security property |
-|---|---|---|
-| `fixtures/redline.scope.json` | Declares what is authorized and whether networking is permitted. | Fails closed: fixture mode is default, and endpoint mode requires a matching exact allowlist. |
-| `fixtures/redline.suites.json` | Holds synthetic prompts, expected coverage tags, and explicit detector assignments. | Cases contain fake canaries only; no real credentials are bundled. |
-| `tools/core.mjs` | Enforces scope, invokes the bounded adapter, applies detectors, scores findings, and emits artifacts. | Tool actions are always mocked and raw payloads are not written. |
-| `tools/redline.mjs` | Provides the CLI contract and captures a source revision for the artifact provenance. | Endpoint mode requires an explicit authorization acknowledgement. |
-| `redline-out/` | Holds ignored local artifacts. | JSON stores hashes and redacted previews; Markdown and HTML are derived from the redacted JSON. |
+| Component                      | Responsibility                                                                                        | Security property                                                                               |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `fixtures/redline.scope.json`  | Declares what is authorized and whether networking is permitted.                                      | Fails closed: fixture mode is default, and endpoint mode requires a matching exact allowlist.   |
+| `fixtures/redline.suites.json` | Holds synthetic prompts, expected coverage tags, and explicit detector assignments.                   | Cases contain fake canaries only; no real credentials are bundled.                              |
+| `tools/core.mjs`               | Enforces scope, invokes the bounded adapter, applies detectors, scores findings, and emits artifacts. | Tool actions are always mocked and raw payloads are not written.                                |
+| `tools/redline.mjs`            | Provides the CLI contract and captures a source revision for the artifact provenance.                 | Endpoint mode requires an explicit authorization acknowledgement.                               |
+| `redline-out/`                 | Holds ignored local artifacts.                                                                        | JSON stores hashes and redacted previews; Markdown and HTML are derived from the redacted JSON. |
 
 ## Reproducibility
 

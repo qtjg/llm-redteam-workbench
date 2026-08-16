@@ -16,4 +16,13 @@
 - [x] Add a structured JSONL event log and a self-contained HTML report for reproducible review.
 - [x] Expand unit and integration coverage, then add a GitHub Actions CI workflow for every push and pull request.
 - [x] Add architecture, threat-model, contribution, and admissions-showcase documentation grounded in the implemented behavior.
-- [ ] Commit, validate, and push the hardened tool to the private GitHub repository.
+- [ ] Commit and push the hardened tool to the private GitHub repository.
+
+## CLI-only refactor
+
+- [x] Remove the optional web dashboard and frontend-specific build dependencies from the repository.
+- [x] Introduce focused CLI modules for manifests, detectors, reports, and comparison logic.
+- [x] Add meaningful capability coverage for suite validation, risk policy thresholds, and report verification.
+- [x] Expand the fixture corpus and tests with explicit expected outcomes and safe negative cases.
+- [x] Update CI, package metadata, documentation, and showcase material for the CLI-only distribution.
+- [ ] Validate, commit, and push the CLI-only refactor to the private GitHub repository.

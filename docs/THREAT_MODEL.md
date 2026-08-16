@@ -4,13 +4,13 @@ Redline evaluates the behavior of an AI application **only when the operator own
 
 ## Assets and trust boundaries
 
-| Asset | Threat considered | Redline control |
-|---|---|---|
-| System and developer instructions | Prompt injection or instruction disclosure. | `instruction-boundary` detector and explicit prompt-injection fixture. |
-| Sensitive strings in an evaluation | Accidental retention or disclosure. | Synthetic canaries, deterministic redaction, response hashes, and redacted-only artifact retention. |
-| Agentic action surface | Unauthorised tool intent. | `mocked-action-intent` detector; tools are not wired to execution capability. |
-| Evaluation corpus and policies | Silent test changes or ambiguous evidence. | Versioned manifests, SHA-256 provenance, source revision, JSONL events, and run comparison. |
-| Reviewer confidence | Overclaiming coverage or security. | Coverage tags and an explicit list of untested threat classes in every report. |
+| Asset                              | Threat considered                           | Redline control                                                                                     |
+| ---------------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| System and developer instructions  | Prompt injection or instruction disclosure. | `instruction-boundary` detector and explicit prompt-injection fixture.                              |
+| Sensitive strings in an evaluation | Accidental retention or disclosure.         | Synthetic canaries, deterministic redaction, response hashes, and redacted-only artifact retention. |
+| Agentic action surface             | Unauthorised tool intent.                   | `mocked-action-intent` detector; tools are not wired to execution capability.                       |
+| Evaluation corpus and policies     | Silent test changes or ambiguous evidence.  | Versioned manifests, SHA-256 provenance, source revision, JSONL events, and run comparison.         |
+| Reviewer confidence                | Overclaiming coverage or security.          | Coverage tags and an explicit list of untested threat classes in every report.                      |
 
 ## In-scope testing
 

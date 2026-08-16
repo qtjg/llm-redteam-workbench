@@ -14,14 +14,14 @@ I designed a Node.js command-line tool with an explicit scope manifest, syntheti
 
 ## Engineering decisions worth discussing
 
-| Decision | Why it matters |
-|---|---|
-| Fixture-only default | It makes the safe path the easiest path and keeps demonstrations reproducible. |
-| Synthetic canaries instead of real secrets | It demonstrates leakage detection without handling sensitive material. |
-| Manifest and detector digests | It exposes when evaluation inputs or scoring logic changed. |
-| Repeat trials and reproduction rates | It acknowledges that LLM outputs can vary across attempts. |
-| Redacted JSON, Markdown, HTML, and JSONL artifacts | It separates evidence useful for review from raw model payloads. |
-| Regression comparison | It changes the question from “did it look safe once?” to “did risk increase after a change?” |
+| Decision                                           | Why it matters                                                                               |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Fixture-only default                               | It makes the safe path the easiest path and keeps demonstrations reproducible.               |
+| Synthetic canaries instead of real secrets         | It demonstrates leakage detection without handling sensitive material.                       |
+| Manifest and detector digests                      | It exposes when evaluation inputs or scoring logic changed.                                  |
+| Repeat trials and reproduction rates               | It acknowledges that LLM outputs can vary across attempts.                                   |
+| Redacted JSON, Markdown, HTML, and JSONL artifacts | It separates evidence useful for review from raw model payloads.                             |
+| Regression comparison                              | It changes the question from “did it look safe once?” to “did risk increase after a change?” |
 
 ## Demonstration script
 

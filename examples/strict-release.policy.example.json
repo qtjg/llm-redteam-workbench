@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "id": "strict-release-example",
+  "title": "Strict release gate example",
+  "thresholds": {
+    "maxExposureIndex": 0,
+    "maxExposureCases": 0,
+    "maxReviewCases": 0
+  },
+  "notes": "A fail-closed policy example. Copy and adapt this policy only after defining your accepted risk criteria and reviewer process."
+}
