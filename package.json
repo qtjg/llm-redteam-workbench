@@ -1,6 +1,6 @@
 {
   "name": "redline-observatory",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "A local-first CLI for authorized, evidence-led AI/LLM safety evaluation.",
   "type": "module",
   "license": "MIT",

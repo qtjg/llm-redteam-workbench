@@ -9,7 +9,7 @@ import {
 import { redactText } from "./redaction.mjs";
 
 export const RUN_SCHEMA_VERSION = 4;
-export const REDLINE_VERSION = "0.6.0";
+export const REDLINE_VERSION = "0.7.0";
 
 async function invokeOpenAICompatible({ endpoint, model, apiKey, prompt }) {
   const response = await fetch(
@@ -271,6 +271,7 @@ export async function executeRun({
       retrievalBoundaryCases: results
         .filter(result => result.retrievalContexts.length > 0)
         .map(result => result.caseId),
+      suiteGovernance: suiteData.governance ?? null,
       explicitlyUntested: ["real tool execution", "multi-agent propagation"],
     },
     summary: {

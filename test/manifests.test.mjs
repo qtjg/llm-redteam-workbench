@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { validateScope, validateSuiteManifest } from "../src/lib/manifests.mjs";
+import {
+  validatePolicy,
+  validateScope,
+  validateSuiteManifest,
+} from "../src/lib/manifests.mjs";
 
 const knownDetectors = [
   "synthetic-canary",
@@ -18,6 +22,16 @@ function baseScope() {
     allowNetwork: false,
     mockTools: true,
     evidenceRetention: "redacted-only",
+  };
+}
+
+function baseGovernance() {
+  return {
+    owner: "Test maintainers",
+    reviewer: "Test review role",
+    lastReviewedAt: "2026-08-16",
+    reviewCadenceDays: 90,
+    reviewStatus: "approved",
   };
 }
 
@@ -40,9 +54,10 @@ test("accepts the local fixture scope shape", () => {
   assert.deepEqual(validateScope(baseScope()), []);
 });
 
-test("accepts multi-turn and redacted retrieval-context fixtures", () => {
+test("accepts governed multi-turn and redacted retrieval-context fixtures", () => {
   const suites = {
-    version: 3,
+    version: 4,
+    governance: baseGovernance(),
     suites: [
       statefulSuite(),
       {
@@ -68,7 +83,8 @@ test("accepts multi-turn and redacted retrieval-context fixtures", () => {
 
 test("rejects invalid turns, retrieval contexts, duplicates, and unknown turn detectors", () => {
   const suites = {
-    version: 3,
+    version: 4,
+    governance: baseGovernance(),
     suites: [
       statefulSuite({
         turns: [
@@ -95,7 +111,8 @@ test("rejects invalid turns, retrieval contexts, duplicates, and unknown turn de
 
 test("rejects a suite that references an unknown detector", () => {
   const suites = {
-    version: 3,
+    version: 4,
+    governance: baseGovernance(),
     suites: [
       {
         id: "PI-01",
@@ -113,4 +130,32 @@ test("rejects a suite that references an unknown detector", () => {
       error.includes("unknown detector")
     )
   );
+});
+
+test("rejects missing governance metadata and malformed time-bound exceptions", () => {
+  const suiteErrors = validateSuiteManifest(
+    {
+      version: 4,
+      suites: [statefulSuite()],
+    },
+    knownDetectors
+  );
+  assert.ok(suiteErrors.some(error => error.includes("governance record")));
+  const policyErrors = validatePolicy({
+    version: 1,
+    thresholds: { maxExposureIndex: 0, maxExposureCases: 0, maxReviewCases: 0 },
+    exceptions: [
+      {
+        id: "bad",
+        caseId: "invalid",
+        findingId: "x",
+        owner: "",
+        reviewer: "",
+        rationale: "too short",
+        expiresAt: "not-a-date",
+      },
+    ],
+  });
+  assert.ok(policyErrors.some(error => error.includes("stable EX-* id")));
+  assert.ok(policyErrors.some(error => error.includes("expiresAt")));
 });

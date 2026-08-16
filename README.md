@@ -104,6 +104,25 @@ pnpm redline release \
 
 Use `--format json` when another local tool needs structured release evidence. The command remains local-first and does not transmit artifact contents.
 
+## Governance, review, and exceptions
+
+Suite schema version 4 requires governance metadata for the whole fixture corpus: an accountable owner role, a reviewer role, the date of the last review, a review cadence, and an approval state. `redline coverage` displays this information beside the detector and threat-class inventory so review responsibility is visible before any execution.
+
+Release policies may contain narrow, **time-bound exceptions** for one known `caseId` and one known `findingId`. An exception needs an owner, reviewer, rationale, and UTC expiration. It never edits the original run artifact or removes a finding. `redline release` preserves the raw safety posture, calculates an effective posture only for currently active exact-match exceptions, and reports `READY-WITH-EXCEPTIONS` when a documented exception is the only reason a release can proceed. Expired, malformed, or unmatched exceptions result in `HOLD`.
+
+```bash
+pnpm redline release \
+  --input redline-out/<run>.json \
+  --policy examples/time-bound-exception.policy.example.json \
+  --format markdown
+```
+
+Read the [governance guide](docs/GOVERNANCE.md) before adding or renewing an exception.
+
+## Automation
+
+GitHub Actions verifies every pull request and `main` push with formatting, manifest validation, deterministic tests, a coverage audit, and the safe-baseline smoke workflow. A separate **Redline Release Readiness** workflow runs on `v*` tags or manual dispatch and uploads redacted coverage and release-readiness evidence. It does not contact targets, create releases, or publish packages automatically; it prepares auditable evidence for an authorized maintainer decision.
+
 ## Safe regression demonstration
 
 The repository contains a clean synthetic baseline only to demonstrate the comparison workflow. It never invokes a remote target.

@@ -1,0 +1,46 @@
+name: Redline Release Readiness
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-readiness:
+    name: Build a redacted release-readiness artifact
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install the CLI package
+        run: pnpm install --frozen-lockfile
+      - name: Validate governance-aware manifests
+        run: pnpm validate
+      - name: Run deterministic checks
+        run: pnpm format:check && pnpm test
+      - name: Build release evidence from the safe baseline
+        shell: bash
+        run: |
+          mkdir -p release-out
+          pnpm redline coverage --format markdown --out release-out/coverage-audit.md
+          pnpm redline run --suites examples/safe-baseline.suites.json --out release-out
+          run_artifact="$(find release-out -maxdepth 1 -name 'run_*.json' | head -n 1)"
+          test -n "$run_artifact"
+          pnpm redline release --input "$run_artifact" --format markdown --out release-out/release-readiness.md
+      - name: Upload redacted release evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: redline-release-readiness-${{ github.sha }}
+          path: release-out/
+          if-no-files-found: error

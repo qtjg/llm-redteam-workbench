@@ -1,6 +1,6 @@
 import { digestJson } from "./codec.mjs";
 
-export const COVERAGE_AUDIT_SCHEMA_VERSION = 1;
+export const COVERAGE_AUDIT_SCHEMA_VERSION = 2;
 
 function fixtureMode(testCase) {
   const multiTurn = Array.isArray(testCase.turns) && testCase.turns.length > 0;
@@ -85,6 +85,7 @@ export function createCoverageAudit(
     suiteName: suiteData.suiteName,
     suiteDigest: auditBasis.suiteDigest,
     sourceRevision,
+    governance: suiteData.governance ?? null,
     summary: {
       cases: testCases.length,
       categories: categories.length,
@@ -126,5 +127,5 @@ export function renderCoverageMarkdown(audit) {
         `| ${testCase.caseId} | ${testCase.category} | ${testCase.mode} | ${testCase.turnCount} | ${testCase.retrievalContextCount} | ${testCase.detectors.join(", ")} |`
     )
     .join("\n");
-  return `# Redline coverage audit\n\n> This manifest-level audit describes declared fixture coverage. It does not execute a model, contact a target, or retain raw prompts or retrieval content.\n\n| Field | Value |\n|---|---|\n| Audit | \`${audit.auditId}\` |\n| Suite | ${audit.suiteName} |\n| Suite digest | \`${audit.suiteDigest}\` |\n| Source revision | \`${audit.sourceRevision}\` |\n| Cases / categories / threat classes | ${audit.summary.cases} / ${audit.summary.categories} / ${audit.summary.threatClasses} |\n| Single-turn / multi-turn / retrieval-boundary cases | ${audit.summary.singleTurnCases} / ${audit.summary.multiTurnCases} / ${audit.summary.retrievalBoundaryCases} |\n| Used / registered detectors | ${audit.summary.detectorsUsed} / ${audit.summary.registeredDetectors} |\n| Registered but unused detectors | ${audit.unusedDetectorIds.join(", ") || "none"} |\n\n## Categories\n\n| Category | Cases |\n|---|---|\n${categoryRows}\n\n## Threat classes\n\n| Coverage tag | Cases |\n|---|---|\n${threatRows}\n\n## Detector use\n\n| Detector | Cases |\n|---|---|\n${detectorRows}\n\n## Fixture inventory\n\n| Case | Category | Mode | Turns | Retrieval contexts | Detectors |\n|---|---|---|---:|---:|---|\n${caseRows}\n`;
+  return `# Redline coverage audit\n\n> This manifest-level audit describes declared fixture coverage. It does not execute a model, contact a target, or retain raw prompts or retrieval content.\n\n| Field | Value |\n|---|---|\n| Audit | \`${audit.auditId}\` |\n| Suite | ${audit.suiteName} |\n| Suite digest | \`${audit.suiteDigest}\` |\n| Source revision | \`${audit.sourceRevision}\` |\n| Suite owner / reviewer | ${audit.governance?.owner ?? "not declared"} / ${audit.governance?.reviewer ?? "not declared"} |\n| Last review / cadence | ${audit.governance?.lastReviewedAt ?? "not declared"} / ${audit.governance?.reviewCadenceDays ?? "not declared"} days |\n| Cases / categories / threat classes | ${audit.summary.cases} / ${audit.summary.categories} / ${audit.summary.threatClasses} |\n| Single-turn / multi-turn / retrieval-boundary cases | ${audit.summary.singleTurnCases} / ${audit.summary.multiTurnCases} / ${audit.summary.retrievalBoundaryCases} |\n| Used / registered detectors | ${audit.summary.detectorsUsed} / ${audit.summary.registeredDetectors} |\n| Registered but unused detectors | ${audit.unusedDetectorIds.join(", ") || "none"} |\n\n## Categories\n\n| Category | Cases |\n|---|---|\n${categoryRows}\n\n## Threat classes\n\n| Coverage tag | Cases |\n|---|---|\n${threatRows}\n\n## Detector use\n\n| Detector | Cases |\n|---|---|\n${detectorRows}\n\n## Fixture inventory\n\n| Case | Category | Mode | Turns | Retrieval contexts | Detectors |\n|---|---|---|---:|---:|---|\n${caseRows}\n`;
 }

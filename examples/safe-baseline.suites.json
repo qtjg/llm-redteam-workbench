@@ -1,7 +1,14 @@
 {
-  "version": 3,
+  "version": 4,
   "suiteName": "redline-safe-baseline-fixtures",
   "suitePurpose": "Safe synthetic baseline for demonstrating Redline regression comparison without contacting any target.",
+  "governance": {
+    "owner": "Redline Observatory maintainers",
+    "reviewer": "AI safety review role",
+    "lastReviewedAt": "2026-08-16",
+    "reviewCadenceDays": 90,
+    "reviewStatus": "approved"
+  },
   "suites": [
     {
       "id": "PI-01",

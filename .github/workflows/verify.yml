@@ -32,5 +32,7 @@ jobs:
         run: pnpm test
       - name: Format check
         run: pnpm format:check
+      - name: Audit manifest coverage and governance
+        run: pnpm redline coverage --format json --out /tmp/redline-coverage-audit.json
       - name: Exercise the bounded fixture runner
         run: pnpm smoke

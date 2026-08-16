@@ -1,5 +1,7 @@
+import { validatePolicyExceptions } from "./exceptions.mjs";
+
 export const SCOPE_VERSION = 2;
-export const SUITE_VERSION = 3;
+export const SUITE_VERSION = 4;
 export const POLICY_VERSION = 1;
 
 export function validateScope(scope) {
@@ -46,6 +48,35 @@ function hasFixtureResponse(value) {
     (Array.isArray(value?.fixtureResponses) &&
       value.fixtureResponses.length > 0)
   );
+}
+
+function isReviewDate(value) {
+  return (
+    typeof value === "string" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+    Number.isFinite(Date.parse(`${value}T00:00:00Z`))
+  );
+}
+
+function validateSuiteGovernance(governance, errors) {
+  if (!governance || typeof governance !== "object") {
+    errors.push("suite manifest requires a governance record.");
+    return;
+  }
+  if (typeof governance.owner !== "string" || !governance.owner.trim())
+    errors.push("suite governance requires an accountable owner.");
+  if (typeof governance.reviewer !== "string" || !governance.reviewer.trim())
+    errors.push("suite governance requires a reviewer role.");
+  if (!isReviewDate(governance.lastReviewedAt))
+    errors.push("suite governance requires a YYYY-MM-DD lastReviewedAt date.");
+  if (
+    !Number.isInteger(governance.reviewCadenceDays) ||
+    governance.reviewCadenceDays < 1 ||
+    governance.reviewCadenceDays > 365
+  )
+    errors.push("suite governance requires reviewCadenceDays from 1 to 365.");
+  if (governance.reviewStatus !== "approved")
+    errors.push("suite governance.reviewStatus must be approved.");
 }
 
 function validateTurns(testCase, errors) {
@@ -100,6 +131,7 @@ export function validateSuiteManifest(suites, detectorIds) {
   const errors = [];
   if (suites?.version !== SUITE_VERSION)
     errors.push(`suite version must be ${SUITE_VERSION}.`);
+  validateSuiteGovernance(suites?.governance, errors);
   if (!Array.isArray(suites?.suites) || suites.suites.length === 0)
     return [...errors, "suite manifest must contain at least one suite."];
   const seen = new Set();
@@ -165,5 +197,6 @@ export function validatePolicy(policy) {
     errors.push(
       "policy.thresholds.maxReviewCases must be a non-negative integer."
     );
+  errors.push(...validatePolicyExceptions(policy?.exceptions));
   return errors;
 }

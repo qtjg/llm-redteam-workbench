@@ -14,7 +14,14 @@ const scope = {
   evidenceRetention: "redacted-only",
 };
 const suites = {
-  version: 3,
+  version: 4,
+  governance: {
+    owner: "Test maintainers",
+    reviewer: "Test review role",
+    lastReviewedAt: "2026-08-16",
+    reviewCadenceDays: 90,
+    reviewStatus: "approved",
+  },
   suites: [
     {
       id: "DL-02",
@@ -54,7 +61,14 @@ test("creates an integrity-verifiable redacted run with a blocking finding", asy
 
 test("records stateful turn hashes and redacted retrieval-boundary evidence", async () => {
   const statefulSuites = {
-    version: 3,
+    version: 4,
+    governance: {
+      owner: "Test maintainers",
+      reviewer: "Test review role",
+      lastReviewedAt: "2026-08-16",
+      reviewCadenceDays: 90,
+      reviewStatus: "approved",
+    },
     suites: [
       {
         id: "MT-05",
@@ -104,6 +118,7 @@ test("records stateful turn hashes and redacted retrieval-boundary evidence", as
   assert.equal(run.summary.retrievalContexts, 1);
   assert.deepEqual(run.coverage.multiTurnCases, ["MT-05"]);
   assert.deepEqual(run.coverage.retrievalBoundaryCases, ["RG-06"]);
+  assert.equal(run.coverage.suiteGovernance.owner, "Test maintainers");
   assert.equal(run.results[0].turnCount, 2);
   assert.deepEqual(run.results[0].turns[1].findingIds, ["MT-PERSIST"]);
   assert.equal(

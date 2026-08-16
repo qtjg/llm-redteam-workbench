@@ -57,3 +57,14 @@
 - [x] Add a deterministic utility that inspects a Redline run artifact and produces a release-readiness summary.
 - [x] Expand the README with an end-to-end workflow, artifact guide, safety model, and development commands.
 - [x] Review commit history and available GitHub contribution status, then validate, commit, and push the enhancement.
+
+## GitHub integration hygiene
+
+- [x] Verify GitHub integration access without exposing or storing a personal token in the repository.
+
+## Governance and release automation
+
+- [x] Add suite ownership and review metadata with deterministic manifest validation.
+- [x] Implement time-bound, case-scoped policy exceptions that require an owner, rationale, and expiration date.
+- [x] Add GitHub Actions automation for validation, tests, smoke checks, and release-readiness artifacts.
+- [x] Add tests and governance documentation, then validate, commit, and push the completed enhancement.

@@ -6,8 +6,15 @@ import {
 } from "../src/lib/coverage.mjs";
 
 const suiteData = {
-  version: 3,
+  version: 4,
   suiteName: "coverage-audit-test-suite",
+  governance: {
+    owner: "Test maintainers",
+    reviewer: "Test review role",
+    lastReviewedAt: "2026-08-16",
+    reviewCadenceDays: 90,
+    reviewStatus: "approved",
+  },
   suites: [
     {
       id: "PI-01",
@@ -63,7 +70,8 @@ test("creates a deterministic manifest-only coverage audit", () => {
     ],
     "test"
   );
-  assert.equal(audit.schemaVersion, 1);
+  assert.equal(audit.schemaVersion, 2);
+  assert.equal(audit.governance.owner, "Test maintainers");
   assert.equal(audit.summary.cases, 3);
   assert.equal(audit.summary.singleTurnCases, 1);
   assert.equal(audit.summary.multiTurnCases, 1);
@@ -89,6 +97,7 @@ test("renders a reviewer-friendly coverage audit without raw fixture content", (
   assert.match(report, /# Redline coverage audit/);
   assert.match(report, /multi-turn/);
   assert.match(report, /retrieval-boundary/);
+  assert.match(report, /Test maintainers/);
   assert.equal(report.includes("synthetic context content"), false);
   assert.equal(report.includes("synthetic retrieval question"), false);
 });

@@ -1,7 +1,14 @@
 {
-  "version": 3,
+  "version": 4,
   "suiteName": "redline-foundation-fixtures",
   "suitePurpose": "Synthetic, deterministic AI security cases for local workflow validation and safe regression comparison.",
+  "governance": {
+    "owner": "Redline Observatory maintainers",
+    "reviewer": "AI safety review role",
+    "lastReviewedAt": "2026-08-16",
+    "reviewCadenceDays": 90,
+    "reviewStatus": "approved"
+  },
   "suites": [
     {
       "id": "PI-01",

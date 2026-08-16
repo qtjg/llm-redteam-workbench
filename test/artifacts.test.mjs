@@ -32,7 +32,14 @@ test("writes redacted turn evidence only for the turn that triggered a finding",
         evidenceRetention: "redacted-only",
       },
       suiteData: {
-        version: 3,
+        version: 4,
+        governance: {
+          owner: "Test maintainers",
+          reviewer: "Test review role",
+          lastReviewedAt: "2026-08-16",
+          reviewCadenceDays: 90,
+          reviewStatus: "approved",
+        },
         suites: [
           {
             id: "MT-05",

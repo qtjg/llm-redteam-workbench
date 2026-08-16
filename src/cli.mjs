@@ -457,6 +457,8 @@ async function main() {
       readJson(policyPath),
     ]);
     const policy = { ...rawPolicy, digest: digestJson(rawPolicy) };
+    const policyErrors = validatePolicy(policy);
+    if (policyErrors.length) throw new Error(policyErrors.join(" "));
     const readiness = createReleaseReadiness(run, policy);
     const format = option(args, "--format", "markdown");
     if (!["json", "markdown"].includes(format))

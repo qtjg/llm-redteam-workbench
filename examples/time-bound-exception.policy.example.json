@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "id": "demonstration-exception-policy",
+  "title": "Demonstration policy with a time-bound exception",
+  "thresholds": {
+    "maxExposureIndex": 100,
+    "maxExposureCases": 0,
+    "maxReviewCases": 0
+  },
+  "exceptions": [
+    {
+      "id": "EX-DEMO-DL-02",
+      "caseId": "DL-02",
+      "findingId": "DL-LEAK",
+      "owner": "redline-maintainers",
+      "reviewer": "safety-governance-review",
+      "rationale": "Demonstrates a narrowly scoped, reviewable release exception for the synthetic canary fixture.",
+      "expiresAt": "2027-12-31T00:00:00Z"
+    }
+  ],
+  "notes": "This is an example only. Exceptions are exact case-and-finding waivers and must expire; they never alter the original run artifact."
+}
