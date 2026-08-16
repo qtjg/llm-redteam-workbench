@@ -6,7 +6,7 @@
 - [x] Add deterministic redaction and severity scoring with machine-readable JSON evidence.
 - [x] Export Markdown and JSON reports without retaining raw sensitive payloads by default.
 - [x] Write usage documentation and validate the complete command workflow.
-- [ ] Commit and push the CLI implementation to the private GitHub repository.
+- [x] Commit and push the CLI implementation to the private GitHub repository.
 
 ## Portfolio-quality hardening
 
@@ -16,7 +16,7 @@
 - [x] Add a structured JSONL event log and a self-contained HTML report for reproducible review.
 - [x] Expand unit and integration coverage, then add a GitHub Actions CI workflow for every push and pull request.
 - [x] Add architecture, threat-model, contribution, and admissions-showcase documentation grounded in the implemented behavior.
-- [ ] Commit and push the hardened tool to the private GitHub repository.
+- [x] Commit and push the hardened tool to the private GitHub repository.
 
 ## CLI-only refactor
 
@@ -25,7 +25,7 @@
 - [x] Add meaningful capability coverage for suite validation, risk policy thresholds, and report verification.
 - [x] Expand the fixture corpus and tests with explicit expected outcomes and safe negative cases.
 - [x] Update CI, package metadata, documentation, and showcase material for the CLI-only distribution.
-- [ ] Validate, commit, and push the CLI-only refactor to the private GitHub repository.
+- [x] Validate, commit, and push the CLI-only refactor to the private GitHub repository.
 
 ## Bounded autonomous agent
 
