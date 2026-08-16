@@ -18,6 +18,21 @@ import {
 } from "./lib/manifests.mjs";
 import { evaluatePolicy } from "./lib/policy.mjs";
 import { renderHtmlReport, renderMarkdownReport } from "./lib/reports.mjs";
+import {
+  allowedAgentGoals,
+  appendAudit,
+  approveAgentExecution,
+  createAgentPlan,
+  createAgentState,
+  makeAuditEvent,
+  readAgentPlan,
+  readAgentState,
+  readAudit,
+  summarizeAgentRun,
+  verifyAuditChain,
+  writeAgentPlan,
+  writeAgentState,
+} from "./lib/agent.mjs";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const DEFAULT_SCOPE = resolve(ROOT, "fixtures/redline.scope.json");
@@ -46,7 +61,12 @@ const readPaths = args => ({
 
 function usage() {
   console.log(
-    `\nredline — CLI-only, evidence-led AI/LLM safety evaluator\n\nCommands:\n  redline doctor [--scope path] [--suites path] [--policy path]\n  redline validate [--scope path] [--suites path] [--policy path]\n  redline list [--suites path]\n  redline run [--suite all|ID] [--repeat 1..20] [--out dir]\n  redline verify --input run.json [--policy path]\n  redline report --input run.json [--format markdown|html] [--out path]\n  redline compare --baseline run-a.json --current run-b.json [--out dir]\n\nDefault mode is local fixtures only. Endpoint mode requires an explicit exact allowlist, mock tools, and --acknowledge-authorization.\n`
+    `\nredline — CLI-only, evidence-led AI/LLM safety evaluator\n\nCommands:\n  redline doctor [--scope path] [--suites path] [--policy path]\n  redline validate [--scope path] [--suites path] [--policy path]\n  redline list [--suites path]\n  redline run [--suite all|ID] [--repeat 1..20] [--out dir]\n  redline verify --input run.json [--policy path]\n  redline report --input run.json [--format markdown|html] [--out path]\n  redline compare --baseline run-a.json --current run-b.json [--out dir]
+  redline agent goals
+  redline agent plan --goal evaluate_fixtures|compare_baseline [--out dir]
+  redline agent run --plan plan.json --approve [--max-steps N] [--out dir]
+
+Default mode is local fixtures only. Endpoint mode requires an explicit exact allowlist, mock tools, and --acknowledge-authorization.\n`
   );
 }
 function errorsFor(scope, suites, policy) {
@@ -65,9 +85,238 @@ function printPaths(paths) {
   );
 }
 
+async function runAgentCommand(args) {
+  const subcommand = args[0] ?? "help";
+  const subargs = args.slice(1);
+  if (["help", "--help", "-h"].includes(subcommand)) {
+    console.log(
+      "Agent commands: goals | plan --goal <goal> | run --plan <plan.json> --approve [--max-steps N]"
+    );
+    console.log(
+      "Safety: fixture-only, network disabled, mocked tools, raw payloads never written."
+    );
+    return;
+  }
+  if (subcommand === "goals") {
+    for (const goal of allowedAgentGoals())
+      console.log(`${goal.id}\t${goal.title}\tsteps: ${goal.steps.join(", ")}`);
+    return;
+  }
+  if (subcommand === "plan") {
+    const goal = option(subargs, "--goal", "evaluate_fixtures");
+    const outputDir = resolve(
+      option(subargs, "--out", resolve(ROOT, "agent-out"))
+    );
+    const plan = createAgentPlan({
+      goal,
+      scopePath: resolve(option(subargs, "--scope", DEFAULT_SCOPE)),
+      suitesPath: resolve(option(subargs, "--suites", DEFAULT_SUITES)),
+      policyPath: resolve(option(subargs, "--policy", DEFAULT_POLICY)),
+      outputDir,
+      repeat: Number(option(subargs, "--repeat", "1")),
+      baselinePath: option(subargs, "--baseline", null),
+      sourceRevision: sourceRevision(),
+    });
+    const planPath = await writeAgentPlan(
+      plan,
+      resolve(outputDir, `${plan.planId}.plan.json`)
+    );
+    console.log(
+      `Agent plan created: ${planPath}\nGoal: ${plan.title}\nSteps: ${plan.steps.map(step => step.id).join(" → ")}\nApproval: required (--approve)`
+    );
+    return;
+  }
+  if (subcommand === "run") {
+    const planPath = option(subargs, "--plan");
+    if (!planPath) throw new Error("agent run requires --plan plan.json");
+    const plan = await readAgentPlan(planPath);
+    approveAgentExecution(
+      plan,
+      flag(subargs, "--approve") ? "I_APPROVE_FIXTURE_EXECUTION" : ""
+    );
+    const outputDir = resolve(option(subargs, "--out", plan.inputs.outputDir));
+    const statePath = resolve(
+      option(
+        subargs,
+        "--state",
+        resolve(outputDir, `${plan.planId}.state.json`)
+      )
+    );
+    const auditPath = resolve(
+      option(
+        subargs,
+        "--audit",
+        resolve(outputDir, `${plan.planId}.audit.jsonl`)
+      )
+    );
+    let state = existsSync(statePath)
+      ? await readAgentState(statePath)
+      : createAgentState(plan);
+    state.context ??= {};
+    let events = await readAudit(auditPath);
+    const record = async (type, status, stepId, details = {}) => {
+      const previousHash = events.at(-1)?.eventHash ?? "GENESIS";
+      const event = makeAuditEvent({
+        runId: state.runId,
+        type,
+        status,
+        stepId,
+        details,
+        previousHash,
+      });
+      events.push(event);
+      await appendAudit(auditPath, event);
+    };
+    if (state.status === "completed")
+      throw new Error(`Agent run ${state.runId} is already complete.`);
+    if (state.status === "planned" || state.status === "paused") {
+      state.status = "running";
+      await record("agent.approval", "approved", null, {
+        mode: "fixture-only",
+        approval: "explicit-cli-flag",
+      });
+    }
+    const maxSteps = Number(
+      option(subargs, "--max-steps", String(plan.steps.length))
+    );
+    if (
+      !Number.isInteger(maxSteps) ||
+      maxSteps < 1 ||
+      maxSteps > plan.steps.length
+    )
+      throw new Error(
+        `--max-steps must be an integer from 1 to ${plan.steps.length}.`
+      );
+    let processed = 0;
+    try {
+      for (
+        let index = state.nextStepIndex;
+        index < plan.steps.length && processed < maxSteps;
+        index += 1
+      ) {
+        const step = plan.steps[index];
+        await record("step.started", "running", step.id, {
+          kind: step.kind,
+          description: step.description,
+        });
+        state.attempts += 1;
+        if (step.kind === "validation") {
+          const [scope, suites, rawPolicy] = await Promise.all([
+            readJson(plan.inputs.scopePath),
+            readJson(plan.inputs.suitesPath),
+            readJson(plan.inputs.policyPath),
+          ]);
+          const policy = { ...rawPolicy, digest: digestJson(rawPolicy) };
+          const errors = errorsFor(scope, suites, policy);
+          if (errors.length) throw new Error(errors.join(" "));
+          state.context.validation = "passed";
+        } else if (step.kind === "evaluation") {
+          const [scope, suites, rawPolicy] = await Promise.all([
+            readJson(plan.inputs.scopePath),
+            readJson(plan.inputs.suitesPath),
+            readJson(plan.inputs.policyPath),
+          ]);
+          const policy = { ...rawPolicy, digest: digestJson(rawPolicy) };
+          const run = await executeRun({
+            scope,
+            suiteData: suites,
+            policy,
+            suiteId: "all",
+            acknowledged: false,
+            repeat: plan.inputs.repeat,
+            sourceRevision: plan.sourceRevision,
+          });
+          const paths = await writeRunArtifacts(run, plan.inputs.outputDir);
+          state.context.runPath = paths.jsonPath;
+          state.context.runId = run.runId;
+          state.context.runPolicy = run.policy.decision;
+        } else if (step.kind === "verification") {
+          if (!state.context.runPath)
+            throw new Error(
+              "No evaluation artifact is available for verification."
+            );
+          const run = await readJson(state.context.runPath);
+          const integrity = verifyRunIntegrity(run);
+          if (!integrity.valid)
+            throw new Error(
+              integrity.reason ?? "Artifact integrity verification failed."
+            );
+          state.context.integrity = "valid";
+        } else if (step.kind === "comparison") {
+          if (!state.context.runPath || !plan.inputs.baselinePath)
+            throw new Error(
+              "Comparison step requires a current run and baseline path."
+            );
+          const comparison = compareRuns(
+            await readJson(plan.inputs.baselinePath),
+            await readJson(state.context.runPath)
+          );
+          const paths = await writeComparisonArtifacts(
+            comparison,
+            plan.inputs.outputDir
+          );
+          state.context.comparisonPath = paths.jsonPath;
+          state.context.regressions = comparison.summary.regressions;
+        } else if (step.kind === "reporting") {
+          state.context.summaryPath = resolve(
+            plan.inputs.outputDir,
+            `${state.runId}.summary.json`
+          );
+        }
+        state.completedStepIds.push(step.id);
+        state.nextStepIndex = index + 1;
+        processed += 1;
+        await record("step.completed", "completed", step.id, {
+          completedStepIds: state.completedStepIds,
+        });
+        await writeAgentState(state, statePath);
+      }
+      state.status =
+        state.nextStepIndex >= plan.steps.length ? "completed" : "paused";
+      const summary = summarizeAgentRun(state, plan, events);
+      if (state.status === "completed") {
+        await writeFile(
+          resolve(plan.inputs.outputDir, `${state.runId}.summary.json`),
+          JSON.stringify({ ...summary, context: state.context }, null, 2) + "\n"
+        );
+        await record("agent.completed", "completed", null, {
+          summaryPath: summary.contextPath ?? `${state.runId}.summary.json`,
+        });
+      } else {
+        await record("agent.paused", "paused", null, {
+          nextStepIndex: state.nextStepIndex,
+          remaining: plan.steps.length - state.nextStepIndex,
+        });
+      }
+      await writeAgentState(state, statePath);
+      const chain = verifyAuditChain(await readAudit(auditPath));
+      console.log(
+        `Agent ${state.status}: ${state.runId}\nCompleted: ${state.completedStepIds.join(", ") || "none"}\nAudit: ${auditPath}\nAudit chain: ${chain.valid ? "VALID" : "INVALID"}`
+      );
+      if (state.status === "paused")
+        console.log(
+          `Resume with: pnpm redline agent run --plan ${planPath} --approve --state ${statePath}`
+        );
+      return;
+    } catch (error) {
+      state.status = "blocked";
+      await record(
+        "agent.blocked",
+        "blocked",
+        plan.steps[state.nextStepIndex]?.id ?? null,
+        { reason: error.message }
+      );
+      await writeAgentState(state, statePath);
+      throw error;
+    }
+  }
+  throw new Error(`Unknown agent command: ${subcommand}`);
+}
+
 async function main() {
   const [, , command = "help", ...args] = process.argv;
   if (["help", "--help", "-h"].includes(command)) return usage();
+  if (command === "agent") return runAgentCommand(args);
   const { scopePath, suitesPath, policyPath } = readPaths(args);
   if (!["report", "compare", "verify"].includes(command))
     for (const path of [scopePath, suitesPath, policyPath])

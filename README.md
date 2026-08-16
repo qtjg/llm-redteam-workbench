@@ -56,6 +56,32 @@ pnpm redline compare \
   --current redline-out/current/<current-run>.json
 ```
 
+## Bounded autonomous agent
+
+Redline includes an agent-style orchestrator for repeatable local evaluation workflows. It is autonomous only within a fixed plan: goals are allowlisted, the plan is hashed, execution is fixture-only, tools are mocked, network access is disabled, raw payloads are never written, and execution requires an explicit approval flag. There is no background daemon or hidden action loop.
+
+```bash
+pnpm redline agent goals
+pnpm redline agent plan --goal evaluate_fixtures --out agent-out
+pnpm redline agent run \
+  --plan agent-out/<plan>.plan.json \
+  --approve \
+  --max-steps 2 \
+  --out agent-out
+```
+
+A bounded run pauses after two steps and prints a resume command. Resume it with the saved state file:
+
+```bash
+pnpm redline agent run \
+  --plan agent-out/<plan>.plan.json \
+  --approve \
+  --state agent-out/<plan>.state.json \
+  --out agent-out
+```
+
+Each plan produces a state file, a chained JSONL audit log, and a summary containing completed steps, safety constraints, and audit-chain validity. The available goals are `evaluate_fixtures` and `compare_baseline`. The orchestrator is deliberately not a general-purpose shell agent and cannot discover targets, execute real tools, or bypass scope gates.
+
 ## Repository map
 
 ```text
@@ -88,7 +114,7 @@ pnpm redline run \
 
 ## Responsible use
 
-Redline is not a scanner, remote exploitation framework, certification service, or agent executor. Do not test systems without authorization. Do not place real customer data, credentials, unreleased prompts, or personal information in a fixture. Review [SECURITY.md](SECURITY.md), the [threat model](docs/THREAT_MODEL.md), and the [contribution guide](CONTRIBUTING.md) before extending the corpus.
+Redline is not a scanner, remote exploitation framework, or certification service. Its agent mode is a bounded fixture orchestrator, not a general-purpose autonomous agent. Do not test systems without authorization. Do not place real customer data, credentials, unreleased prompts, or personal information in a fixture. Review [SECURITY.md](SECURITY.md), the [threat model](docs/THREAT_MODEL.md), and the [contribution guide](CONTRIBUTING.md) before extending the corpus.
 
 ## Engineering rationale
 

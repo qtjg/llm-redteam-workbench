@@ -26,3 +26,13 @@
 - [x] Expand the fixture corpus and tests with explicit expected outcomes and safe negative cases.
 - [x] Update CI, package metadata, documentation, and showcase material for the CLI-only distribution.
 - [ ] Validate, commit, and push the CLI-only refactor to the private GitHub repository.
+
+## Bounded autonomous agent
+
+- [x] Define an agent run manifest with explicit scope, budget, timeout, and approval requirements.
+- [x] Add a planner that converts approved evaluation goals into deterministic, inspectable steps.
+- [x] Add a dry-run executor with mocked tools, step-level policy gates, and human approval checkpoints.
+- [x] Add append-only audit events for planning, execution, approvals, blocks, and artifacts.
+- [x] Add resume, pause, and bounded retry behavior without hidden background execution.
+- [x] Add tests for budget exhaustion, unauthorized actions, prompt-injection-resistant planning, and audit integrity.
+- [x] Update CLI documentation and publish the autonomous-agent extension to the private repository.

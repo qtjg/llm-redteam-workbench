@@ -1,6 +1,6 @@
 # Architecture
 
-Redline follows a small, inspectable pipeline so a reviewer can trace how a result was produced. The CLI is the primary deliverable; the dashboard is an optional visualization prototype and does not drive the evaluator.
+Redline follows a small, inspectable CLI pipeline so a reviewer can trace how a result was produced. The autonomous layer is a bounded orchestration loop over that pipeline; it does not create a second execution engine.
 
 ```text
 scope manifest + suite manifest
@@ -16,17 +16,21 @@ scope manifest + suite manifest
             │
             ▼
  JSON · JSONL events · Markdown · standalone HTML report
+            │
+            ▼
+ optional bounded agent plan → approval → steps → chained audit log
 ```
 
 ## Components
 
-| Component                      | Responsibility                                                                                        | Security property                                                                               |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `fixtures/redline.scope.json`  | Declares what is authorized and whether networking is permitted.                                      | Fails closed: fixture mode is default, and endpoint mode requires a matching exact allowlist.   |
-| `fixtures/redline.suites.json` | Holds synthetic prompts, expected coverage tags, and explicit detector assignments.                   | Cases contain fake canaries only; no real credentials are bundled.                              |
-| `tools/core.mjs`               | Enforces scope, invokes the bounded adapter, applies detectors, scores findings, and emits artifacts. | Tool actions are always mocked and raw payloads are not written.                                |
-| `tools/redline.mjs`            | Provides the CLI contract and captures a source revision for the artifact provenance.                 | Endpoint mode requires an explicit authorization acknowledgement.                               |
-| `redline-out/`                 | Holds ignored local artifacts.                                                                        | JSON stores hashes and redacted previews; Markdown and HTML are derived from the redacted JSON. |
+| Component                      | Responsibility                                                                            | Security property                                                                             |
+| ------------------------------ | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `fixtures/redline.scope.json`  | Declares what is authorized and whether networking is permitted.                          | Fails closed: fixture mode is default, and endpoint mode requires a matching exact allowlist. |
+| `fixtures/redline.suites.json` | Holds synthetic prompts, expected coverage tags, and explicit detector assignments.       | Cases contain fake canaries only; no real credentials are bundled.                            |
+| `src/lib/evaluator.mjs`        | Runs the bounded adapter, applies detectors, scores findings, and emits provenance.       | Tool actions are mocked and raw payloads are not written.                                     |
+| `src/lib/agent.mjs`            | Creates allowlisted plans, gates approval, pauses/resumes steps, and chains audit events. | Fixture-only mode, disabled network, bounded step count, and tamper-evident audit log.        |
+| `src/cli.mjs`                  | Provides the CLI contract and captures a source revision for artifact provenance.         | Agent execution requires the exact explicit approval flag.                                    |
+| `redline-out/`                 | Holds ignored local evaluation artifacts.                                                 | JSON stores hashes and redacted previews; Markdown and HTML are derived from redacted JSON.   |
 
 ## Reproducibility
 
@@ -36,4 +40,4 @@ The `--repeat` option records an observed reproduction rate for each detector. R
 
 ## Non-goals
 
-Redline is not a vulnerability scanner, a remote exploitation framework, an agent executor, or a security certification service. It deliberately does not perform discovery, credential collection, persistence, destructive actions, unbounded prompt generation, or real tool invocation.
+Redline is not a vulnerability scanner, a remote exploitation framework, or a security certification service. Its agent mode is deliberately bounded: it does not perform discovery, credential collection, persistence, destructive actions, unbounded prompt generation, shell commands, real tool invocation, or background execution.

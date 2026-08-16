@@ -114,3 +114,7 @@ redline-out/
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json
 .project-config.json
+
+# Autonomous agent output — generated locally and intentionally not committed.
+agent-out/
+agent-compare-out/
