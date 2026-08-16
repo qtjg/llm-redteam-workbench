@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "authorized": true,
+  "mode": "endpoint",
+  "allowedTargets": ["https://approved.example/v1"],
+  "allowNetwork": true,
+  "mockTools": true,
+  "evidenceRetention": "redacted-only",
+  "operatorStatement": "Replace the placeholder URL only after you have documented explicit authorization to evaluate this exact endpoint. Tool execution must remain mocked."
+}

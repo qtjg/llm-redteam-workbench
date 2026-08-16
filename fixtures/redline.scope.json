@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "authorized": true,
   "mode": "fixture",
   "fixtureTarget": "local-fixture://atlas-support-copilot",
@@ -7,5 +7,6 @@
   "allowNetwork": false,
   "mockTools": true,
   "evidenceRetention": "redacted-only",
-  "operatorStatement": "This manifest authorizes only the bundled local fixtures. No external model, system, credential, or tool is in scope."
+  "operatorStatement": "This manifest authorizes only the bundled local fixtures. No external model, system, credential, or tool is in scope.",
+  "reviewerNote": "The fixture suite is intended for regression and workflow demonstration; it is not a production security certification."
 }
