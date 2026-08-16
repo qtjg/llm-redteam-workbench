@@ -21,6 +21,10 @@ import {
   validateSuiteManifest,
 } from "./lib/manifests.mjs";
 import { evaluatePolicy } from "./lib/policy.mjs";
+import {
+  createReleaseReadiness,
+  renderReleaseReadinessMarkdown,
+} from "./lib/release.mjs";
 import { renderHtmlReport, renderMarkdownReport } from "./lib/reports.mjs";
 import {
   allowedAgentGoals,
@@ -65,7 +69,7 @@ const readPaths = args => ({
 
 function usage() {
   console.log(
-    `\nredline — CLI-only, evidence-led AI/LLM safety evaluator\n\nCommands:\n  redline doctor [--scope path] [--suites path] [--policy path]\n  redline validate [--scope path] [--suites path] [--policy path]\n  redline list [--suites path]\n  redline coverage [--suites path] [--format json|markdown] [--out path]\n  redline run [--suite all|ID] [--repeat 1..20] [--out dir]\n  redline verify --input run.json [--policy path]\n  redline report --input run.json [--format markdown|html] [--out path]\n  redline compare --baseline run-a.json --current run-b.json [--out dir]
+    `\nredline — CLI-only, evidence-led AI/LLM safety evaluator\n\nCommands:\n  redline doctor [--scope path] [--suites path] [--policy path]\n  redline validate [--scope path] [--suites path] [--policy path]\n  redline list [--suites path]\n  redline coverage [--suites path] [--format json|markdown] [--out path]\n  redline run [--suite all|ID] [--repeat 1..20] [--out dir]\n  redline verify --input run.json [--policy path]\n  redline release --input run.json [--policy path] [--format json|markdown] [--out path]\n  redline report --input run.json [--format markdown|html] [--out path]\n  redline compare --baseline run-a.json --current run-b.json [--out dir]
   redline agent goals
   redline agent plan --goal evaluate_fixtures|evaluate_stateful_boundaries|compare_baseline [--out dir]
   redline agent run --plan plan.json --approve [--max-steps N] [--out dir]
@@ -322,7 +326,7 @@ async function main() {
   if (["help", "--help", "-h"].includes(command)) return usage();
   if (command === "agent") return runAgentCommand(args);
   const { scopePath, suitesPath, policyPath } = readPaths(args);
-  if (!["report", "compare", "verify", "coverage"].includes(command))
+  if (!["report", "compare", "verify", "coverage", "release"].includes(command))
     for (const path of [scopePath, suitesPath, policyPath])
       if (!existsSync(path)) throw new Error(`Manifest not found: ${path}`);
   if (command === "doctor" || command === "validate") {
@@ -443,6 +447,31 @@ async function main() {
       `Integrity: ${integrity.valid ? "VALID" : "INVALID"}\nPolicy: ${decision.decision.toUpperCase()}${decision.reasons.length ? `\n${decision.reasons.map(reason => `- ${reason}`).join("\n")}` : ""}`
     );
     if (!integrity.valid || decision.decision === "block") process.exitCode = 2;
+    return;
+  }
+  if (command === "release") {
+    const input = option(args, "--input");
+    if (!input) throw new Error("release requires --input run.json");
+    const [run, rawPolicy] = await Promise.all([
+      readJson(resolve(input)),
+      readJson(policyPath),
+    ]);
+    const policy = { ...rawPolicy, digest: digestJson(rawPolicy) };
+    const readiness = createReleaseReadiness(run, policy);
+    const format = option(args, "--format", "markdown");
+    if (!["json", "markdown"].includes(format))
+      throw new Error("--format must be json or markdown.");
+    const content =
+      format === "json"
+        ? JSON.stringify(readiness, null, 2) + "\n"
+        : renderReleaseReadinessMarkdown(readiness);
+    const output = option(args, "--out", null);
+    if (output) {
+      const path = resolve(output);
+      await writeFile(path, content);
+      console.log(`Wrote ${format} release-readiness summary: ${path}`);
+    } else console.log(content);
+    if (readiness.decision === "hold") process.exitCode = 2;
     return;
   }
   if (command === "report") {

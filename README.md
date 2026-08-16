@@ -16,6 +16,7 @@ An LLM safety test is meaningful only when another reviewer can answer four ques
 | Redacted evidence     | JSON, JSONL, Markdown, and standalone HTML reports retain hashes and sanitized previews only.                                            |
 | Regression comparison | Case-level comparisons identify risk regressions, improvements, coverage changes, and exposure-index deltas.                             |
 | Stateful boundaries   | Versioned synthetic conversations and retrieval contexts record turn hashes, redacted previews, and boundary findings without live data. |
+| Release readiness     | A manifest-only utility verifies artifact integrity, policy gates, provenance, redacted retention, and bounded-execution declarations.   |
 
 ## Install and run
 
@@ -33,6 +34,21 @@ The resulting artifacts appear under `redline-out/` and are ignored by Git. The 
 
 The foundation suite intentionally includes synthetic detector signals for review demonstrations, so its current default policy decision is `BLOCK` after writing redacted evidence. It is useful for verifying reporting and policy gates, while the safe baseline is used by `pnpm smoke` and CI to verify the full execution path. For a stricter release gate, copy [`examples/strict-release.policy.example.json`](examples/strict-release.policy.example.json) and pass it with `--policy`.
 
+## End-to-end local workflow
+
+The following workflow is the recommended starting point for a reviewer, contributor, or admissions portfolio reader. It starts with a no-network manifest check, examines declared coverage, executes only the safe bundled baseline, verifies integrity, and produces a release-readiness summary from the resulting redacted artifact.
+
+| Step              | Command                                                                                      | What it proves                                                                                     |
+| ----------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| 1. Preflight      | `pnpm redline doctor`                                                                        | The selected scope is fixture-only, network-disabled, and tool-mocked.                             |
+| 2. Validate       | `pnpm redline validate`                                                                      | Scope, suite, detector references, and policy shape are internally consistent.                     |
+| 3. Audit coverage | `pnpm redline coverage --format markdown`                                                    | Declared threat classes, detector use, and stateful fixture modes are reviewable before execution. |
+| 4. Run baseline   | `pnpm redline run --suites examples/safe-baseline.suites.json --out redline-out/safe`        | A deterministic safe corpus exercises the full artifact pipeline.                                  |
+| 5. Verify         | `pnpm redline verify --input redline-out/safe/<run>.json`                                    | The artifact digest is intact and the current policy decision is reproduced.                       |
+| 6. Release review | `pnpm redline release --input redline-out/safe/<run>.json --out redline-out/safe/release.md` | Integrity, policy, provenance, retention, and bounded-execution checks are summarized.             |
+
+Replace `<run>` with the run identifier printed by the `run` command. Generated artifacts are deliberately ignored by Git so reviewers can reproduce them locally rather than trusting checked-in output.
+
 ## CLI reference
 
 | Command                                                            | Purpose                                                                                |
@@ -45,6 +61,20 @@ The foundation suite intentionally includes synthetic detector signals for revie
 | `pnpm redline verify --input redline-out/<run>.json`               | Checks artifact integrity and reevaluates the active risk policy.                      |
 | `pnpm redline report --input redline-out/<run>.json --format html` | Re-renders an HTML report from a redacted JSON record.                                 |
 | `pnpm redline compare --baseline <a>.json --current <b>.json`      | Compares case-level risk signals between two runs.                                     |
+| `pnpm redline release --input <run>.json --format markdown`        | Produces a release-readiness decision from a pre-existing redacted run artifact.       |
+
+## Artifact guide
+
+Every run uses a deterministic identifier and emits a small evidence bundle. These files are intended for review and regression work; they do not contain raw prompts, complete responses, credentials, live tool outputs, or full retrieval content.
+
+| Artifact              | Purpose                        | Safe evidence retained                                                                             |
+| --------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `<run>.json`          | Canonical redacted run record  | Metadata, hashes, sanitized previews, findings, coverage, policy decision, and provenance digests. |
+| `<run>.events.jsonl`  | Append-friendly event stream   | Case and turn identifiers, detector finding IDs, response hashes, and timestamps.                  |
+| `<run>.md`            | Human-readable review report   | Summary metrics, per-case detector outcomes, and coverage statements.                              |
+| `<run>.html`          | Standalone local report        | The same redacted conclusions in a self-contained HTML view.                                       |
+| `coverage-audit.json` | Manifest-level planning record | Coverage tags, detector-to-case mapping, test modes, and unused registered detectors.              |
+| `release.md`          | Release-review decision        | Integrity, policy, provenance, evidence-retention, and bounded-execution checks.                   |
 
 ## Multi-turn and retrieval-boundary evaluation
 
@@ -60,6 +90,19 @@ The foundation pack demonstrates cross-turn injected-instruction persistence (`M
 pnpm redline coverage --format markdown
 pnpm redline coverage --format json --out redline-out/coverage-audit.json
 ```
+
+## Release-readiness utility
+
+`redline release` is intentionally separate from `redline run`. It never calls a model. Instead, it reads an existing redacted run artifact, recomputes its integrity digest, evaluates a chosen policy, checks the run’s bounded-execution declarations, confirms the expected provenance fields, and returns `READY` or `HOLD`. A `HOLD` exit code is deliberate: it prevents a release workflow from treating a blocked artifact as a passing gate.
+
+```bash
+pnpm redline release \
+  --input redline-out/safe/<run>.json \
+  --format markdown \
+  --out redline-out/safe/release-readiness.md
+```
+
+Use `--format json` when another local tool needs structured release evidence. The command remains local-first and does not transmit artifact contents.
 
 ## Safe regression demonstration
 
@@ -108,6 +151,7 @@ src/lib/detectors.mjs       small policy-driven detector registry
 src/lib/coverage.mjs        manifest-only coverage and detector-use audit
 src/lib/evaluator.mjs       bounded execution, integrity, and provenance
 src/lib/policy.mjs          scoring, thresholds, and risk decisions
+src/lib/release.mjs         local release-readiness checks for a redacted run artifact
 src/lib/artifacts.mjs       redacted JSON/JSONL/Markdown/HTML outputs
 fixtures/                   synthetic scope, suite, and policy manifests
 examples/                   safe baseline and endpoint-manifest example
@@ -133,6 +177,19 @@ pnpm redline run \
 ## Responsible use
 
 Redline is not a scanner, remote exploitation framework, or certification service. Its agent mode is a bounded fixture orchestrator, not a general-purpose autonomous agent. Do not test systems without authorization. Do not place real customer data, credentials, unreleased prompts, or personal information in a fixture. Review [SECURITY.md](SECURITY.md), the [threat model](docs/THREAT_MODEL.md), and the [contribution guide](CONTRIBUTING.md) before extending the corpus.
+
+## Development and quality gates
+
+The repository uses Node.js 20 or later, pnpm, Prettier, and the built-in Node test runner. No database, cloud service, browser runtime, or API key is required for the default workflow.
+
+```bash
+pnpm format:check  # verify formatting
+pnpm test          # deterministic unit and artifact tests
+pnpm validate      # validate default manifests
+pnpm smoke         # run the complete safe-baseline path
+```
+
+Pull requests and pushes are expected to keep these four checks passing. When proposing a new detector or suite, update the versioned manifest, add a safe deterministic fixture, document the intended coverage tag, and include a test that proves the generated artifact remains redacted.
 
 ## Engineering rationale
 

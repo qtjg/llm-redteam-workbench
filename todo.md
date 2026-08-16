@@ -51,3 +51,9 @@
 - [x] Add a deterministic coverage-audit model that summarizes threat classes, detector use, and stateful fixture modes.
 - [x] Expose the audit through a `redline coverage` CLI command with JSON and Markdown output.
 - [x] Add unit tests, usage documentation, validation, and a pushed GitHub release commit.
+
+## Repository release utility and documentation
+
+- [x] Add a deterministic utility that inspects a Redline run artifact and produces a release-readiness summary.
+- [x] Expand the README with an end-to-end workflow, artifact guide, safety model, and development commands.
+- [ ] Review commit history and available GitHub contribution status, then validate, commit, and push the enhancement.
