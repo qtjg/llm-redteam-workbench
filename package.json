@@ -3,13 +3,18 @@
   "version": "1.0.0",
   "type": "module",
   "license": "MIT",
+  "bin": {
+    "redline": "./tools/redline.mjs"
+  },
   "scripts": {
     "dev": "vite --host",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "NODE_ENV=production node dist/index.js",
     "preview": "vite preview --host",
     "check": "tsc --noEmit",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "redline": "node tools/redline.mjs",
+    "redline:test": "node --test tools/redline.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

@@ -108,6 +108,9 @@ temp/
 # Webdev artifacts (checkpoint zips, migrations, etc.)
 .webdev/
 
+# Redline evaluator output — reports are redacted, but run artifacts stay local by default.
+redline-out/
+
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json
 .project-config.json

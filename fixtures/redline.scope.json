@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "authorized": true,
+  "mode": "fixture",
+  "fixtureTarget": "local-fixture://atlas-support-copilot",
+  "allowedTargets": ["local-fixture://atlas-support-copilot"],
+  "allowNetwork": false,
+  "mockTools": true,
+  "evidenceRetention": "redacted-only",
+  "operatorStatement": "This manifest authorizes only the bundled local fixtures. No external model, system, credential, or tool is in scope."
+}
