@@ -5,18 +5,10 @@
 </p>
 
 
-<!-- ⬡ 3D-UPGRADE v1 by Mayank Bhaskar -->
+<!-- ⬡ 3D-UPGRADE v2 by Mayank Bhaskar -->
 <div align="center">
 
-![llm-redteam-workbench — 3D](assets/3d-hero.svg)
-
 **made by [Mayank Bhaskar](https://github.com/qtjg)** · ![lang](https://img.shields.io/badge/lang-JavaScript-ef4444?style=flat&labelColor=0d1117) ![stars](https://img.shields.io/github/stars/qtjg/llm-redteam-workbench?style=flat&labelColor=0d1117&color=ef4444)
-
-### 🧊 3D View
-
-![llm-redteam-workbench — isometric stack](assets/3d-stack.svg)
-
-*Floating isometric render — layers hover, data particles stream, shine sweeps.*
 
 </div>
 
