@@ -118,3 +118,13 @@ client/public/__manus__/version.json
 # Autonomous agent output — generated locally and intentionally not committed.
 agent-out/
 agent-compare-out/
+
+# Node version managers
+.node-version
+
+.python-version
+
+
+# Python
+__pycache__/
+*.py[cod]
